@@ -36,8 +36,11 @@ build/
 .env
 .env.local
 .env.*.local
-application-prod.properties
-application-production.properties
+application.properties
+application-*.properties
+!application-dev.properties.example
+!application.properties.example
+.env.example
 
 ### Log Files ###
 *.log
