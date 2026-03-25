@@ -6,22 +6,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import jakarta.validation.constraints.Size;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserCreateRequest {
-    
-    private String username;
-    
-    @Size(min = 8, message = "INVALID_PASSWORD")
-    private String password;
-    
-    private String email;
-    
-    private Integer roleId;
-    
-    private String status; // active, inactive
+public class AuthenticationRequest {
+    String username;
+    String password;
 }

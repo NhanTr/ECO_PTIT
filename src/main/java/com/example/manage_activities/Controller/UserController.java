@@ -4,6 +4,8 @@ import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserUpdateRequest;
 import com.example.manage_activities.dto.response.UserResponseDTO;
 import com.example.manage_activities.service.UserService;
+
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -28,7 +30,7 @@ public class UserController {
      * POST /api/v1/users
      */
     @PostMapping
-    public ResponseEntity<UserResponseDTO> createUser(@RequestBody UserCreateRequest request) {
+    public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
         log.info("Create user request received for username: {}", request.getUsername());
         UserResponseDTO response = userService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -45,6 +47,7 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
     
+    
     /**
      * Get user by ID
      * GET /api/v1/users/{id}
@@ -54,30 +57,6 @@ public class UserController {
         log.info("Get user request received for ID: {}", id);
         UserResponseDTO user = userService.getUserById(id);
         return ResponseEntity.ok(user);
-    }
-    
-    /**
-     * Get user by username
-     * GET /api/v1/users/search/username/{username}
-     */
-    @GetMapping("/search/username/{username}")
-    public ResponseEntity<UserResponseDTO> getUserByUsername(@PathVariable String username) {
-        log.info("Get user request received for username: {}", username);
-        return userService.getUserByUsername(username)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-    
-    /**
-     * Get user by email
-     * GET /api/v1/users/search/email/{email}
-     */
-    @GetMapping("/search/email/{email}")
-    public ResponseEntity<UserResponseDTO> getUserByEmail(@PathVariable String email) {
-        log.info("Get user request received for email: {}", email);
-        return userService.getUserByEmail(email)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
     }
     
     /**

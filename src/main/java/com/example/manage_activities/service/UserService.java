@@ -2,8 +2,11 @@ package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserUpdateRequest;
+import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.dto.response.UserResponseDTO;
 import com.example.manage_activities.entity.User;
+import com.example.manage_activities.exception.AppException;
+import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.UserMapper;
 import com.example.manage_activities.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -36,13 +39,13 @@ public class UserService {
         log.info("Creating new user with username: {}", request.getUsername());
         
         // Check if username already exists
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists: " + request.getUsername());
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new AppException(ErrorCode.USER_EXISTED);
         }
         
         // Check if email already exists
-        if (request.getEmail() != null && userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists: " + request.getEmail());
+        if (request.getEmail() != null && userRepository.existsByEmail(request.getEmail())) {
+            throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
         
         // Create new user with ID and creation timestamp
@@ -66,6 +69,11 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserResponseDTO getUserById(String id) {
         log.info("Fetching user with ID: {}", id);
+
+        if (!userRepository.existsById(id)) {
+            throw new AppException(ErrorCode.USER_NOT_EXISTED);
+        }
+
         return userRepository.findById(id)
                 .map(userMapper::toDTO)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));

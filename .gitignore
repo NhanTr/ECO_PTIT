@@ -98,3 +98,5 @@ yarn-error.log
 *.class
 *.jar.original
 .factorypath
+
+.claude/
