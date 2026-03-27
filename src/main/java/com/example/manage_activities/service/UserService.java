@@ -29,6 +29,7 @@ public class UserService {
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
     
     /**
      * Create a new user
@@ -51,8 +52,6 @@ public class UserService {
         User user = userMapper.toEntity(request);
         user.setId(generateUserId());
         user.setCreatedAt(LocalDateTime.now());
-
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
 
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         
