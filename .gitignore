@@ -31,3 +31,72 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Environment & Configuration Files ###
+.env
+.env.local
+.env.*.local
+application.properties
+application-*.properties
+!application-dev.properties.example
+!application.properties.example
+.env.example
+
+### Log Files ###
+*.log
+*.log.*
+logs/
+
+### OS Files ###
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.nfs*
+
+### Development Tools ###
+.classpath
+*.prefs
+*.properties.bak
+
+### MacOS ###
+.AppleDouble
+.LSOverride
+._*
+
+### Database Files ###
+*.db
+*.sqlite
+*.sqlite3
+
+### Temporary Files ###
+/tmp/
+/temp/
+/.tmp/
+
+### Maven Local Repository ###
+.m2/
+
+### IDE Extensions ###
+*.sublime-workspace
+*.sublime-project
+.vscode/settings.json
+.vscode/launch.json
+.vscode/extensions.json
+
+### Gradle ###
+.gradle/
+gradle/
+
+### Node (if frontend exists) ###
+node_modules/
+npm-debug.log
+yarn-error.log
+
+### Generated Files ###
+*.class
+*.jar.original
+.factorypath
+
+.claude/
