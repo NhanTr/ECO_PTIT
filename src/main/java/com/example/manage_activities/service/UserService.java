@@ -2,7 +2,6 @@ package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserUpdateRequest;
-import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.dto.response.UserResponseDTO;
 import com.example.manage_activities.entity.User;
 import com.example.manage_activities.exception.AppException;

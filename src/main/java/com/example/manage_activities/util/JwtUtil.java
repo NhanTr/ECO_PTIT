@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Date;
 
@@ -16,7 +17,7 @@ import java.util.Date;
 @Slf4j
 public class JwtUtil {
 
-    @Value("${jwt.secret-key:MySecretKeyForJWTAuthenticationChangeThisInProduction123456}")
+    @Value("${jwt.secret-key}")
     private String secretKey;
 
     @Value("${jwt.valid-duration:3600}")
@@ -30,24 +31,14 @@ public class JwtUtil {
             log.debug("Starting JWT token generation for userId: {}", userId);
             
             String key = secretKey;
-            if (key == null || key.isEmpty()) {
-                log.warn("Secret key is null or empty, using default");
-                key = "MySecretKeyForJWTAuthenticationChangeThisInProduction123456";
-            }
-            
-            if (key.length() < 32) {
-                log.warn("Secret key length {} is less than 32, using default", key.length());
-                key = "MySecretKeyForJWTAuthenticationChangeThisInProduction123456";
-            }
 
             log.debug("Using secret key with length: {}", key.length());
 
             // Create JWT claims
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-                    .subject(userId)
                     .issueTime(new Date())
                     .expirationTime(new Date(System.currentTimeMillis() + validDuration * 1000))
-                    .claim("userId", userId)
+                    .claim("userId", userId) // You can add more claims as needed
                     .build();
 
             // Create JWS header
@@ -60,7 +51,7 @@ public class JwtUtil {
             JWSObject jwsObject = new JWSObject(header, payload);
 
             // Sign with MACSigner
-            jwsObject.sign(new MACSigner(key.getBytes()));
+            jwsObject.sign(new MACSigner(key.getBytes(StandardCharsets.UTF_8)));
 
             String token = jwsObject.serialize();
             log.info("JWT token generated successfully for user: {} (token length: {})", userId, token.length());
@@ -79,18 +70,12 @@ public class JwtUtil {
      */
     public String verifyToken(String token) {
         try {
+
             String key = secretKey;
-            if (key == null || key.isEmpty()) {
-                key = "MySecretKeyForJWTAuthenticationChangeThisInProduction123456";
-            }
-            
-            if (key.length() < 32) {
-                key = "MySecretKeyForJWTAuthenticationChangeThisInProduction123456";
-            }
 
             SignedJWT signedJWT = SignedJWT.parse(token);
 
-            JWSVerifier verifier = new MACVerifier(key.getBytes());
+            JWSVerifier verifier = new MACVerifier(key.getBytes(StandardCharsets.UTF_8));
             if (!signedJWT.verify(verifier)) {
                 log.warn("JWT signature verification failed");
                 return null;
@@ -99,12 +84,12 @@ public class JwtUtil {
             JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
 
             // Check expiration
-            if (claimsSet.getExpirationTime().before(new Date())) {
+            if (claimsSet.getExpirationTime().before(new Date ())) {
                 log.warn("JWT token expired");
                 return null;
             }
 
-            return claimsSet.getSubject();
+            return claimsSet.getClaim("userId").toString();
         } catch (ParseException e) {
             log.error("Error parsing JWT token", e);
             return null;

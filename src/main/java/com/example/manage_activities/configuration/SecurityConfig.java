@@ -30,16 +30,19 @@ public class SecurityConfig {
     @Value("${jwt.secret-key}")
     private String JWT_SECRET_KEY;
 
+    private final String[] PUBLIC_ENDPOINTS = {
+        "/auth/token",
+        "/auth/introspect",
+    };
+
     @Bean
     SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.authorizeHttpRequests(request -> request
-                .requestMatchers("/auth/token").permitAll()
-                .requestMatchers("/auth/introspect").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/users/**").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()
+                .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                 .anyRequest()
                 .authenticated());
         
+        // Apply oauth2ResourceServer, but JwtAuthenticationEntryPoint handles permitAll routes
         httpSecurity.oauth2ResourceServer(oauth2 -> 
                 oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder())
                 .jwtAuthenticationConverter(jwtAuthenticationConverter()))
