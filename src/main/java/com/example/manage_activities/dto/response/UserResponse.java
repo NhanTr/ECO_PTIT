@@ -7,13 +7,24 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class IntrospectResponse {
-    boolean valid;
-    String username;
-    Integer scopes; // You can change this to a more complex structure if needed
+public class UserResponse {
+    
+    private String id;
+    
+    private String username;
+    
+    private String email;
+    
+    private Integer roleId;
+    
+    private String status;
+    
+    private LocalDateTime createdAt;
 }

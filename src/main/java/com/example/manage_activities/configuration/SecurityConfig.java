@@ -33,6 +33,7 @@ public class SecurityConfig {
     private final String[] PUBLIC_ENDPOINTS = {
         "/auth/token",
         "/auth/introspect",
+        "/api/v1/activities/**"
     };
 
     @Bean

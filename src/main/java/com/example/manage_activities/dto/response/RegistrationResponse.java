@@ -14,17 +14,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserResponseDTO {
+public class RegistrationResponse {
     
-    private String id;
-    
-    private String username;
-    
-    private String email;
-    
-    private Integer roleId;
-    
-    private String status;
-    
-    private LocalDateTime createdAt;
+    String id;
+    String activityId;
+    String studentId;
+    String status;  // Registered, Cancelled
+    LocalDateTime createdAt;
 }

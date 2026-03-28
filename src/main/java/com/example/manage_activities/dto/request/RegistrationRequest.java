@@ -1,4 +1,4 @@
-package com.example.manage_activities.dto.response;
+package com.example.manage_activities.dto.request;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -6,14 +6,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import jakarta.validation.constraints.NotBlank;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class IntrospectResponse {
-    boolean valid;
-    String username;
-    Integer scopes; // You can change this to a more complex structure if needed
+public class RegistrationRequest {
+    
+    @NotBlank(message = "Activity ID is required")
+    String activityId;
 }

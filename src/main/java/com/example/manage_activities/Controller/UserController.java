@@ -2,7 +2,8 @@ package com.example.manage_activities.Controller;
 
 import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserUpdateRequest;
-import com.example.manage_activities.dto.response.UserResponseDTO;
+import com.example.manage_activities.dto.response.APIResponse;
+import com.example.manage_activities.dto.response.UserResponse;
 import com.example.manage_activities.service.UserService;
 
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,9 +32,9 @@ public class UserController {
      * POST /api/v1/users
      */
     @PostMapping
-    public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody UserCreateRequest request) {
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserCreateRequest request) {
         log.info("Create user request received for username: {}", request.getUsername());
-        UserResponseDTO response = userService.createUser(request);
+        UserResponse response = userService.createUser(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
@@ -41,10 +43,16 @@ public class UserController {
      * GET /api/v1/users
      */
     @GetMapping
-    public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
-        log.info("Get all users request received");
-        List<UserResponseDTO> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+    public APIResponse<List<UserResponse>> getAllUsers() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        log.info("Authenticated user: {}", authentication.getName());
+        log.info("Get all users request received {}", authentication.getAuthorities());
+
+        List<UserResponse> users = userService.getAllUsers();
+        return APIResponse.<List<UserResponse>>builder()
+                .result(users)
+                .build();
     }
     
     
@@ -53,9 +61,9 @@ public class UserController {
      * GET /api/v1/users/{id}
      */
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable String id) {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
         log.info("Get user request received for ID: {}", id);
-        UserResponseDTO user = userService.getUserById(id);
+        UserResponse user = userService.getUserById(id);
         return ResponseEntity.ok(user);
     }
     
@@ -64,9 +72,9 @@ public class UserController {
      * PUT /api/v1/users/{id}
      */
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> updateUser(@PathVariable String id, @RequestBody UserUpdateRequest request) {
+    public ResponseEntity<UserResponse> updateUser(@PathVariable String id, @RequestBody UserUpdateRequest request) {
         log.info("Update user request received for ID: {}", id);
-        UserResponseDTO response = userService.updateUser(id, request);
+        UserResponse response = userService.updateUser(id, request);
         return ResponseEntity.ok(response);
     }
     

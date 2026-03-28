@@ -50,7 +50,7 @@ public class AuthenticationService {
         }
 
         // Generate JWT token
-        String token = jwtUtil.generateToken(user.getId());
+        String token = jwtUtil.generateToken(user);
         log.info("Token generated successfully for user: {}", request.getUsername());
 
         return AuthenticationResponse.builder()
@@ -79,6 +79,7 @@ public class AuthenticationService {
         return IntrospectResponse.builder()
                 .valid(true)
                 .username(user.map(User::getUsername).orElse(null))
+                .scopes(user.map(User::getRoleId).orElse(null))
                 .build();
     }
 }

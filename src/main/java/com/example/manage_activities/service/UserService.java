@@ -2,7 +2,7 @@ package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserUpdateRequest;
-import com.example.manage_activities.dto.response.UserResponseDTO;
+import com.example.manage_activities.dto.response.UserResponse;
 import com.example.manage_activities.entity.User;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
@@ -11,7 +11,6 @@ import com.example.manage_activities.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +34,7 @@ public class UserService {
      * Create a new user
      */
     @Transactional
-    public UserResponseDTO createUser(UserCreateRequest request) {
+    public UserResponse createUser(UserCreateRequest request) {
         log.info("Creating new user with username: {}", request.getUsername());
         
         // Check if username already exists
@@ -65,7 +64,7 @@ public class UserService {
      * Get user by ID
      */
     @Transactional(readOnly = true)
-    public UserResponseDTO getUserById(String id) {
+    public UserResponse getUserById(String id) {
         log.info("Fetching user with ID: {}", id);
 
         if (!userRepository.existsById(id)) {
@@ -81,7 +80,7 @@ public class UserService {
      * Get all users
      */
     @Transactional(readOnly = true)
-    public List<UserResponseDTO> getAllUsers() {
+    public List<UserResponse> getAllUsers() {
         log.info("Fetching all users");
         return userRepository.findAll()
                 .stream()
@@ -93,7 +92,7 @@ public class UserService {
      * Get user by username
      */
     @Transactional(readOnly = true)
-    public Optional<UserResponseDTO> getUserByUsername(String username) {
+    public Optional<UserResponse> getUserByUsername(String username) {
         log.info("Fetching user with username: {}", username);
         return userRepository.findByUsername(username)
                 .map(userMapper::toDTO);
@@ -103,7 +102,7 @@ public class UserService {
      * Get user by email
      */
     @Transactional(readOnly = true)
-    public Optional<UserResponseDTO> getUserByEmail(String email) {
+    public Optional<UserResponse> getUserByEmail(String email) {
         log.info("Fetching user with email: {}", email);
         return userRepository.findByEmail(email)
                 .map(userMapper::toDTO);
@@ -113,7 +112,7 @@ public class UserService {
      * Update user information
      */
     @Transactional
-    public UserResponseDTO updateUser(String id, UserUpdateRequest request) {
+    public UserResponse updateUser(String id, UserUpdateRequest request) {
         log.info("Updating user with ID: {}", id);
         
         User user = userRepository.findById(id)

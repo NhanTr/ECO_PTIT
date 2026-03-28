@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Date;
+import com.example.manage_activities.entity.User;
 
 @Component
 @Slf4j
@@ -26,19 +27,21 @@ public class JwtUtil {
     /**
      * Generate JWT token for user using HS256 algorithm
      */
-    public String generateToken(String userId) {
+    public String generateToken(User user) {
         try {
-            log.debug("Starting JWT token generation for userId: {}", userId);
-            
+            log.debug("Starting JWT token generation for userId: {}", user.getId());
+
             String key = secretKey;
 
             log.debug("Using secret key with length: {}", key.length());
 
             // Create JWT claims
             JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+                    .subject(user.getId())  // Add subject for authentication
                     .issueTime(new Date())
                     .expirationTime(new Date(System.currentTimeMillis() + validDuration * 1000))
-                    .claim("userId", userId) // You can add more claims as needed
+                    .claim("userId", user.getId()) // You can add more claims as needed
+                    .claim("scopes", buildScopes(user))
                     .build();
 
             // Create JWS header
@@ -54,7 +57,7 @@ public class JwtUtil {
             jwsObject.sign(new MACSigner(key.getBytes(StandardCharsets.UTF_8)));
 
             String token = jwsObject.serialize();
-            log.info("JWT token generated successfully for user: {} (token length: {})", userId, token.length());
+            log.info("JWT token generated successfully for user: {} (token length: {})", user.getId(), token.length());
             return token;
         } catch (JOSEException e) {
             log.error("JOSE Exception while generating JWT token: {}", e.getMessage(), e);
@@ -62,6 +65,25 @@ public class JwtUtil {
         } catch (Exception e) {
             log.error("Exception while generating JWT token: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to generate token: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Build scopes string from user roles
+     */
+
+    private String buildScopes(User user) {
+        // Map roleId to role name: 1=ADMIN, 2=ORGANIZER, 3=MANAGER, 4=STUDENT
+        if (user.getRoleId() == null || user.getRoleId() <= 0) {
+            return "STUDENT";
+        }
+        
+        try {
+            com.example.manage_activities.enums.Roles[] roles = com.example.manage_activities.enums.Roles.values();
+            int index = Math.min(user.getRoleId() - 1, roles.length - 1);
+            return roles[index].name();
+        } catch (Exception e) {
+            return "STUDENT";
         }
     }
 

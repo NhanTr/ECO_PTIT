@@ -2,7 +2,7 @@ package com.example.manage_activities.mapper;
 
 import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserUpdateRequest;
-import com.example.manage_activities.dto.response.UserResponseDTO;
+import com.example.manage_activities.dto.response.UserResponse;
 import com.example.manage_activities.entity.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -18,7 +18,7 @@ public interface UserMapper {
     User toEntity(UserCreateRequest request);
     
     // Convert User entity to response DTO
-    UserResponseDTO toDTO(User user);
+    UserResponse toDTO(User user);
     
     // Update user entity with data from update request
     @Mapping(target = "id", ignore = true)
