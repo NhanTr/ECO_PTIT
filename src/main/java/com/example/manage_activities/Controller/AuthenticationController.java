@@ -2,6 +2,7 @@ package com.example.manage_activities.Controller;
 
 import com.example.manage_activities.dto.request.AuthenticationRequest;
 import com.example.manage_activities.dto.request.IntrospectRequest;
+import com.example.manage_activities.dto.request.RefreshTokenRequest;
 import com.example.manage_activities.dto.response.AuthenticationResponse;
 import com.example.manage_activities.dto.response.IntrospectResponse;
 import com.example.manage_activities.dto.response.APIResponse;
@@ -32,6 +33,25 @@ public class AuthenticationController {
         IntrospectResponse result = authenticationService.introspect(request); 
         return APIResponse.<IntrospectResponse>builder()
                 .result(result)
+                .build();
+    }
+
+    @PostMapping("/refresh")
+    APIResponse<AuthenticationResponse> refreshToken(@RequestBody RefreshTokenRequest request) {
+        AuthenticationResponse result = authenticationService.refreshToken(request);
+        return APIResponse.<AuthenticationResponse>builder()
+                .result(result)
+                .build();
+    }
+
+    @PostMapping("/logout")
+    APIResponse<String> logout(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            authenticationService.logout(token);
+        }
+        return APIResponse.<String>builder()
+                .result("Logout successful")
                 .build();
     }
     

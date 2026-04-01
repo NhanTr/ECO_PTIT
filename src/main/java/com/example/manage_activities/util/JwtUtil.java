@@ -24,6 +24,9 @@ public class JwtUtil {
     @Value("${jwt.valid-duration:3600}")
     private long validDuration;
 
+    @Value("${jwt.refresh-duration:604800}")
+    private long refreshDuration;
+
     /**
      * Generate JWT token for user using HS256 algorithm
      */
@@ -126,5 +129,99 @@ public class JwtUtil {
      */
     public boolean introspectToken(String token) {
         return verifyToken(token) != null;
+    }
+
+    /**
+     * Generate refresh token for user
+     */
+    public String generateRefreshToken(User user) {
+        try {
+            log.debug("Starting refresh token generation for userId: {}", user.getId());
+
+            String key = secretKey;
+
+            // Create JWT claims for refresh token
+            JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
+                    .subject(user.getId())
+                    .issueTime(new Date())
+                    .expirationTime(new Date(System.currentTimeMillis() + refreshDuration * 1000))
+                    .claim("userId", user.getId())
+                    .claim("type", "refresh")
+                    .build();
+
+            // Create JWS header
+            JWSHeader header = new JWSHeader.Builder(JWSAlgorithm.HS256).build();
+            
+            // Create payload
+            Payload payload = new Payload(claimsSet.toJSONObject());
+            
+            // Create JWS object
+            JWSObject jwsObject = new JWSObject(header, payload);
+
+            // Sign with MACSigner
+            jwsObject.sign(new MACSigner(key.getBytes(StandardCharsets.UTF_8)));
+
+            String token = jwsObject.serialize();
+            log.info("Refresh token generated successfully for user: {}", user.getId());
+            return token;
+        } catch (JOSEException e) {
+            log.error("JOSE Exception while generating refresh token: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to generate refresh token: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Verify refresh token and return user ID
+     */
+    public String verifyRefreshToken(String token) {
+        try {
+            String key = secretKey;
+
+            SignedJWT signedJWT = SignedJWT.parse(token);
+
+            JWSVerifier verifier = new MACVerifier(key.getBytes(StandardCharsets.UTF_8));
+            if (!signedJWT.verify(verifier)) {
+                log.warn("Refresh token signature verification failed");
+                return null;
+            }
+
+            JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
+
+            // Check expiration
+            if (claimsSet.getExpirationTime().before(new Date())) {
+                log.warn("Refresh token expired");
+                return null;
+            }
+
+            // Verify token type
+            Object typeObj = claimsSet.getClaim("type");
+            if (typeObj == null || !"refresh".equals(typeObj.toString())) {
+                log.warn("Invalid token type for refresh token");
+                return null;
+            }
+
+            return claimsSet.getClaim("userId").toString();
+        } catch (ParseException e) {
+            log.error("Error parsing refresh token", e);
+            return null;
+        } catch (JOSEException e) {
+            log.error("Error verifying refresh token", e);
+            return null;
+        }
+    }
+
+    /**
+     * Extract user ID from token (without full verification)
+     */
+    public String extractUserIdFromToken(String token) {
+        try {
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
+            Object userIdObj = claimsSet.getClaim("userId");
+            return userIdObj != null ? userIdObj.toString() : null;
+        } catch (ParseException e) {
+            log.error("Error extracting user ID from token", e);
+            return null;
+        }
     }
 }
