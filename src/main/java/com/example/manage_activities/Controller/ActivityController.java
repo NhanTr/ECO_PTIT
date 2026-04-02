@@ -9,6 +9,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,14 +38,17 @@ public class ActivityController {
     }
     
     /**
-     * Get all activities
-     * GET /api/v1/activities
+     * Get all activities with pagination
+     * GET /api/v1/activities?page=0&size=10&sort=createdAt,desc
      */
     @GetMapping
-    public APIResponse<List<ActivityResponse>> getAllActivities() {
-        log.info("Get all activities request received");
-        List<ActivityResponse> activities = activityService.getAllActivities();
-        return APIResponse.<List<ActivityResponse>>builder()
+    public APIResponse<Page<ActivityResponse>> getAllActivities(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "2") int size,
+            Pageable pageable) {
+        log.info("Get all activities request received - page: {}, size: {}", page, size);
+        Page<ActivityResponse> activities = activityService.getAllActivities(pageable);
+        return APIResponse.<Page<ActivityResponse>>builder()
                 .result(activities)
                 .build();
     }

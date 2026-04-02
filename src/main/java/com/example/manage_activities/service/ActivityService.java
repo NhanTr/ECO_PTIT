@@ -9,6 +9,9 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -63,15 +66,13 @@ public class ActivityService {
     }
     
     /**
-     * Get all activities
+     * Get all activities with pagination
      */
-    public List<ActivityResponse> getAllActivities() {
-        log.info("Getting all activities");
+    public Page<ActivityResponse> getAllActivities(Pageable pageable) {
+        log.info("Getting activities with pagination - page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
         
-        return activityRepository.findAll()
-                .stream()
-                .map(activityMapper::toDTO)
-                .collect(Collectors.toList());
+        Page<Activity> activities = activityRepository.findAll(pageable);
+        return activities.map(activityMapper::toDTO);
     }
     
     /**
