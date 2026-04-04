@@ -5,6 +5,7 @@ import com.example.manage_activities.dto.request.UserUpdateRequest;
 import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.dto.response.UserResponse;
 import com.example.manage_activities.service.UserService;
+import com.example.manage_activities.dto.request.ChangePasswordRequest;
 
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -87,5 +88,23 @@ public class UserController {
         log.info("Delete user request received for ID: {}", id);
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Change user password
+     * POST /api/v1/users/change-password
+     */
+    @PostMapping("/change-password")
+    public APIResponse<Void> changePassword(@RequestBody ChangePasswordRequest request) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userId = authentication.getName();
+
+        log.info("Change password request received for user ID: {}", userId);
+
+        userService.changePassword(userId, request);
+        return APIResponse.<Void>builder()
+                .result(null)
+                .message("Password was changed successfully")
+                .build();
     }
 }

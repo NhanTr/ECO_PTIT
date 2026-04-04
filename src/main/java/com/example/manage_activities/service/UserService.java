@@ -1,5 +1,6 @@
 package com.example.manage_activities.service;
 
+import com.example.manage_activities.dto.request.ChangePasswordRequest;
 import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserUpdateRequest;
 import com.example.manage_activities.dto.response.UserResponse;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -156,5 +158,34 @@ public class UserService {
             id = UUID.randomUUID().toString().substring(0, 10).toUpperCase();
         } while (userRepository.existsById(id)); // Check for uniqueness
         return id;
+    }
+
+    /**
+     * Change user password
+    */
+
+    @Transactional
+    public void changePassword(String userId,ChangePasswordRequest request) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        log.info("Changing password for user: {}", username);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+
+        // Check if old password matches
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new RuntimeException("Old password is incorrect");
+        }
+
+        // Check if new password and confirm password match
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new RuntimeException("New password and confirm password do not match");
+        }
+
+        // Update password
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        log.info("Password changed successfully for user: {}", username);
     }
 }
