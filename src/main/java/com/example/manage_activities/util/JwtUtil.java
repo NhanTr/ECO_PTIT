@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Date;
 import com.example.manage_activities.entity.User;
+import com.example.manage_activities.enums.Roles;
 
 @Component
 @Slf4j
@@ -74,18 +75,12 @@ public class JwtUtil {
     /**
      * Build scopes string from user roles
      */
-
     private String buildScopes(User user) {
-        // Map roleId to role name: 1=ADMIN, 2=ORGANIZER, 3=MANAGER, 4=STUDENT
-        if (user.getRoleId() == null || user.getRoleId() <= 0) {
-            return "STUDENT";
-        }
-        
+        // Map roleId to role name using Roles enum: 1=ADMIN, 2=ORGANIZER, 3=MANAGER, 4=STUDENT
         try {
-            com.example.manage_activities.enums.Roles[] roles = com.example.manage_activities.enums.Roles.values();
-            int index = Math.min(user.getRoleId() - 1, roles.length - 1);
-            return roles[index].name();
+            return Roles.getNameById(user.getRoleId());
         } catch (Exception e) {
+            log.warn("Error getting role name for roleId: {}, defaulting to STUDENT", user.getRoleId(), e);
             return "STUDENT";
         }
     }

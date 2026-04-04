@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,8 +30,10 @@ public class ActivityController {
     /**
      * Create a new activity
      * POST /api/v1/activities
+     * Only ORGANIZER and ADMIN can create activities
      */
     @PostMapping
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     public ResponseEntity<ActivityResponse> createActivity(@Valid @RequestBody ActivityCreateRequest request) {
         log.info("Create activity request received for title: {}", request.getTitle());
         ActivityResponse response = activityService.createActivity(request);

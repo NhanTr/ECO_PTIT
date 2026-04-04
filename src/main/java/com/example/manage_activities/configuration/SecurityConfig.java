@@ -30,21 +30,35 @@ public class SecurityConfig {
     @Value("${jwt.secret-key}")
     private String JWT_SECRET_KEY;
 
-    private final String[] PUBLIC_ENDPOINTS = {
-        "/auth/token",
-        "/auth/introspect",
-        "/auth/refresh",
-        "/api/v1/activities/**"
-    };
-
     @Bean
     SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.authorizeHttpRequests(request -> request
-                .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                .anyRequest()
-                .authenticated());
+                // Public endpoints - no authentication required
+                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("GET", "/api/v1/activities/**").permitAll()
+                
+                // User endpoints - ADMIN only
+                .requestMatchers("GET", "/api/v1/users").hasRole("ADMIN")
+                .requestMatchers("GET", "/api/v1/users/**").hasRole("ADMIN")
+                .requestMatchers("POST", "/api/v1/users").hasRole("ADMIN")
+                .requestMatchers("PUT", "/api/v1/users/**").hasRole("ADMIN")
+                .requestMatchers("DELETE", "/api/v1/users/**").hasRole("ADMIN")
+                
+                // Activity endpoints - ORGANIZER, ADMIN can create/edit
+                .requestMatchers("POST", "/api/v1/activities").hasAnyRole("ORGANIZER", "ADMIN")
+                .requestMatchers("PUT", "/api/v1/activities/**").hasAnyRole("ORGANIZER", "ADMIN")
+                .requestMatchers("DELETE", "/api/v1/activities/**").hasAnyRole("ORGANIZER", "ADMIN")
+                
+                // Registration endpoints - all authenticated users
+                .requestMatchers("POST", "/api/v1/registrations/**").authenticated()
+                .requestMatchers("DELETE", "/api/v1/registrations/**").authenticated()
+                .requestMatchers("GET", "/api/v1/registrations/**").authenticated()
+                
+                // All other authenticated requests require authentication
+                .anyRequest().authenticated()
+        );
         
-        // Apply oauth2ResourceServer, but JwtAuthenticationEntryPoint handles permitAll routes
+        // Apply oauth2ResourceServer with JWT
         httpSecurity.oauth2ResourceServer(oauth2 -> 
                 oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder())
                 .jwtAuthenticationConverter(jwtAuthenticationConverter()))
@@ -58,6 +72,7 @@ public class SecurityConfig {
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
+        converter.setAuthoritiesClaimName("scopes");
         converter.setAuthorityPrefix("ROLE_");
         JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
         authenticationConverter.setJwtGrantedAuthoritiesConverter(converter);
