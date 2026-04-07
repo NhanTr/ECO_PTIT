@@ -27,25 +27,25 @@ public class RegistrationController {
     
     /**
      * Register for activity
-     * POST /api/v1/registrations
+     * POST /api/v1/registrations/{activityId}
      */
-    @PostMapping
-    public APIResponse<RegistrationResponse> registerActivity(@Valid @RequestBody RegistrationRequest request) {
-        log.info("Register activity request received for activity: {}", request.getActivityId());
-        RegistrationResponse response = registrationService.registerActivity(request);
+    @PostMapping("/{activityId}")
+    public APIResponse<RegistrationResponse> registerActivity(@PathVariable String activityId) {
+        log.info("Register activity request received for activity: {}", activityId);
+        registrationService.registerActivity(activityId);
         return APIResponse.<RegistrationResponse>builder()
-                .result(response)
+                .result(null)
                 .build();
     }
     
     /**
      * Unregister from activity
-     * DELETE /api/v1/registrations
+     * DELETE /api/v1/registrations/{activityId}
      */
-    @DeleteMapping
-    public APIResponse<Void> unregisterActivity(@RequestBody RegistrationRequest request) {
-        log.info("Unregister activity request received for activity: {}", request.getActivityId());
-        registrationService.unregisterActivity(request.getActivityId());
+    @DeleteMapping("/{activityId}")
+    public APIResponse<Void> unregisterActivity(@PathVariable String activityId) {
+        log.info("Unregister activity request received for activity: {}", activityId);
+        registrationService.unregisterActivity(activityId);
         return APIResponse.<Void>builder()
                 .result(null)
                 .build();

@@ -31,28 +31,26 @@ public class RegistrationService {
     /**
      * Register user for activity
      */
-    public RegistrationResponse registerActivity(RegistrationRequest request) {
-        log.info("Registering user for activity: {}", request.getActivityId());
+    public void registerActivity(String activityId) {
+        log.info("Registering user for activity: {}", activityId);
         
         String userId = SecurityContextHolder.getContext().getAuthentication().getName();
         
         // Check if already registered
-        boolean alreadyRegistered = registrationRepository.existsByActivityIdAndStudentId(request.getActivityId(), userId);
+        boolean alreadyRegistered = registrationRepository.existsByActivityIdAndStudentId(activityId, userId);
         
         if (alreadyRegistered) {
             throw new AppException(ErrorCode.EXIST_REGISTRATIONS);
         }
         
-        Registration registration = registrationMapper.toEntity(request);
+        Registration registration = new Registration();
         registration.setId(generateRegistrationId());
+        registration.setActivityId(activityId);
         registration.setStudentId(userId);
         registration.setStatus("Registered");
         registration.setCreatedAt(LocalDateTime.now());
         
-        Registration savedRegistration = registrationRepository.save(registration);
-        log.info("User registered successfully for activity: {}", request.getActivityId());
-        
-        return registrationMapper.toDTO(savedRegistration);
+        registrationRepository.save(registration);
     }
     
     /**
