@@ -3,6 +3,8 @@ package com.example.manage_activities.service;
 import com.example.manage_activities.dto.request.RegistrationRequest;
 import com.example.manage_activities.dto.response.RegistrationResponse;
 import com.example.manage_activities.entity.Registration;
+import com.example.manage_activities.exception.AppException;
+import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.RegistrationMapper;
 import com.example.manage_activities.repository.RegistrationRepository;
 import lombok.AccessLevel;
@@ -38,7 +40,7 @@ public class RegistrationService {
         boolean alreadyRegistered = registrationRepository.existsByActivityIdAndStudentId(request.getActivityId(), userId);
         
         if (alreadyRegistered) {
-            throw new RuntimeException("User is already registered for this activity");
+            throw new AppException(ErrorCode.EXIST_REGISTRATIONS);
         }
         
         Registration registration = registrationMapper.toEntity(request);
@@ -62,15 +64,15 @@ public class RegistrationService {
         String studentId = SecurityContextHolder.getContext().getAuthentication().getName();
         log.debug("Searching registration - activityId: {}, studentId: {}", activityId, studentId);
         
-        Registration registration = registrationRepository
-                .findByActivityIdAndStudentId(activityId, studentId)
-                .orElseThrow(() -> {
-                    log.warn("Registration not found for activityId: {}, studentId: {}", activityId, studentId);
-                    return new RuntimeException("Registration not found. You may not be registered for this activity.");
-                });
+        String registrationId = registrationRepository.findIdByActivityIdAndStudentId(activityId, studentId);
         
-        registration.setStatus("Cancelled");
-        registrationRepository.save(registration);
+        if (registrationId == null) {
+            log.warn("Registration not found for activityId: {}, studentId: {}", activityId, studentId);
+            throw new AppException(ErrorCode.NO_REGISTRATIONS);
+        }
+
+        registrationRepository.deleteById(registrationId);
+
         log.info("User unregistered successfully from activity: {}", activityId);
     }
     
@@ -86,7 +88,7 @@ public class RegistrationService {
 
         if (registrations.isEmpty()) {
             log.info("No registrations found for user: {}", studentId);
-            throw new RuntimeException("No registrations found for user");
+            throw new AppException(ErrorCode.NO_REGISTRATIONS);
         } else {
             log.info("Found {} registrations for user: {}", registrations.size(), studentId);
         }

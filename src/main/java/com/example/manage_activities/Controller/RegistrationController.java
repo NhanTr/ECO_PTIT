@@ -9,8 +9,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,21 +30,25 @@ public class RegistrationController {
      * POST /api/v1/registrations
      */
     @PostMapping
-    public ResponseEntity<RegistrationResponse> registerActivity(@Valid @RequestBody RegistrationRequest request) {
+    public APIResponse<RegistrationResponse> registerActivity(@Valid @RequestBody RegistrationRequest request) {
         log.info("Register activity request received for activity: {}", request.getActivityId());
         RegistrationResponse response = registrationService.registerActivity(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return APIResponse.<RegistrationResponse>builder()
+                .result(response)
+                .build();
     }
     
     /**
      * Unregister from activity
-     * DELETE /api/v1/registrations/{activityId}
+     * DELETE /api/v1/registrations
      */
-    @DeleteMapping("/{activityId}")
-    public ResponseEntity<Void> unregisterActivity(@PathVariable String activityId) {
-        log.info("Unregister activity request received for activity: {}", activityId);
-        registrationService.unregisterActivity(activityId);
-        return ResponseEntity.noContent().build();
+    @DeleteMapping
+    public APIResponse<Void> unregisterActivity(@RequestBody RegistrationRequest request) {
+        log.info("Unregister activity request received for activity: {}", request.getActivityId());
+        registrationService.unregisterActivity(request.getActivityId());
+        return APIResponse.<Void>builder()
+                .result(null)
+                .build();
     }
     
     /**
