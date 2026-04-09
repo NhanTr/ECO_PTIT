@@ -85,6 +85,7 @@ public class ActivityController {
      * GET /api/v1/activities/status/{status}
      */
     @GetMapping("/status/{status}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public APIResponse<List<ActivityResponse>> getActivityByStatus(@PathVariable String status) {
         log.info("Get activities request received for status: {}", status);
         List<ActivityResponse> activities = activityService.getActivityByStatus(status);
