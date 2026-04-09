@@ -1,4 +1,4 @@
-package com.example.manage_activities.dto.response;
+package com.example.manage_activities.dto.request;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -12,8 +12,12 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class IntrospectResponse {
-    boolean valid;
-    String username;
-    Integer scopes; // You can change this to a more complex structure if needed
+public class ProfileRequest {
+
+    String fullName;
+    String studentCode;
+    String department;
+    String phone;
+    String avatarUrl;
 }
+

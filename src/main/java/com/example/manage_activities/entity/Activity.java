@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 
 
@@ -40,7 +41,7 @@ public class Activity {
     LocalDateTime endTime;
     
     @Column(precision = 15, scale = 2)
-    java.math.BigDecimal budget;
+    BigDecimal budget;
     
     String sponsor;
     String targetAudience;

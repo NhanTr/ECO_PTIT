@@ -6,7 +6,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,6 +19,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.http.HttpMethod;
 
 
 
@@ -30,19 +31,37 @@ public class SecurityConfig {
     @Value("${jwt.secret-key}")
     private String JWT_SECRET_KEY;
 
-    private final String[] PUBLIC_ENDPOINTS = {
-        "/auth/token",
-        "/auth/introspect",
-    };
-
     @Bean
     SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.authorizeHttpRequests(request -> request
-                .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                .anyRequest()
-                .authenticated());
+                // Public endpoints - no authentication required
+                .requestMatchers("/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/activities/**").permitAll()
+                
+                // User endpoints - ADMIN only
+                .requestMatchers(HttpMethod.GET, "/api/v1/users").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/v1/users").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/users/**").hasRole("ADMIN")
+                
+                // Activity endpoints - ORGANIZER, ADMIN can create/edit
+                .requestMatchers(HttpMethod.POST, "/api/v1/activities").hasAnyRole("ORGANIZER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/activities/**").hasAnyRole("ORGANIZER", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/activities/**").hasAnyRole("ORGANIZER", "ADMIN")
+
+                
+                // Registration endpoints - all authenticated users
+                .requestMatchers(HttpMethod.POST, "/api/v1/registrations/**").authenticated()
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/registrations/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v1/registrations/**").authenticated()
+                
+
+                // All other authenticated requests require authentication
+                .anyRequest().authenticated()
+        );
         
-        // Apply oauth2ResourceServer, but JwtAuthenticationEntryPoint handles permitAll routes
+        // Apply oauth2ResourceServer with JWT
         httpSecurity.oauth2ResourceServer(oauth2 -> 
                 oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder())
                 .jwtAuthenticationConverter(jwtAuthenticationConverter()))
@@ -56,6 +75,7 @@ public class SecurityConfig {
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
+        converter.setAuthoritiesClaimName("scopes");
         converter.setAuthorityPrefix("ROLE_");
         JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
         authenticationConverter.setJwtGrantedAuthoritiesConverter(converter);
