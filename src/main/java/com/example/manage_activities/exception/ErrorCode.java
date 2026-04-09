@@ -18,8 +18,8 @@ public enum ErrorCode {
     BAD_REQUEST(1009, "Bad request", HttpStatus.BAD_REQUEST),
     EMAIL_EXISTED(1010, "Email existed", HttpStatus.BAD_REQUEST),
     ACTIVITY_NOT_FOUND(1011, "Activity not found", HttpStatus.NOT_FOUND),
-    ACTIVITY_ALREADY_APPROVED(1012, "Activity has already been approved", HttpStatus.BAD_REQUEST)
-    ;
+    ACTIVITY_ALREADY_APPROVED(1012, "Activity has already been approved", HttpStatus.BAD_REQUEST),
+    ACTIVITY_ALREADY_REJECTED(1013, "Activity has already been rejected", HttpStatus.BAD_REQUEST);
 
 
     private int code;

@@ -86,7 +86,28 @@ public class ActivityService {
         Activity savedActivity = activityRepository.save(activity);
         return activityMapper.toDTO(savedActivity);
     }
-    
+
+    /**
+     * Reject activity so it can be publicly available.
+     */
+    public ActivityResponse rejectActivity(String id) {
+        log.info("Rejecting activity with ID: {}", id);
+
+        Activity activity = activityRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ACTIVITY_NOT_FOUND));
+
+        if ("Rejected".equalsIgnoreCase(activity.getStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_ALREADY_REJECTED);
+        }
+
+        String reviewerId = SecurityContextHolder.getContext().getAuthentication().getName();
+        activity.setStatus("Rejected");
+        activity.setReviewerId(reviewerId);
+
+        Activity savedActivity = activityRepository.save(activity);
+        return activityMapper.toDTO(savedActivity);
+    }
+
     /**
      * Get all activities with pagination
      */

@@ -21,13 +21,25 @@ public class ManagerActivityController {
 
     /**
      * Approve activity to be publicly available.
-     * POST /api/manager/activities/{id}/approve
+     * PATCH /api/manager/activities/{id}/approve
      */
     @PatchMapping ("/{id}/approve")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ActivityResponse> approveActivity(@PathVariable String id) {
         log.info("Approve activity request received for ID: {}", id);
         ActivityResponse activity = activityService.approveActivity(id);
+        return ResponseEntity.ok(activity);
+    }
+
+    /**
+     * Reject activity to be publicly available.
+     * PATCH /api/manager/activities/{id}/reject
+     */
+    @PatchMapping ("/{id}/reject")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ActivityResponse> rejectActivity(@PathVariable String id) {
+        log.info("Reject activity request received for ID: {}", id);
+        ActivityResponse activity = activityService.rejectActivity(id);
         return ResponseEntity.ok(activity);
     }
 }
