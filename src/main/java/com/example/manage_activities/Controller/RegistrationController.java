@@ -11,6 +11,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -67,6 +68,7 @@ public class RegistrationController {
      * GET /api/v1/registrations/activity/{activityId}
      */
     @GetMapping("/activity/{activityId}")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN','MANAGER')")
     public APIResponse<List<RegistrationResponse>> getActivityRegistrations(@PathVariable String activityId) {
         log.info("Get activity registrations request received for activity: {}", activityId);
         List<RegistrationResponse> registrations = registrationService.getActivityRegistrations(activityId);
