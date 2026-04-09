@@ -30,7 +30,7 @@ public class ActivityController {
     /**
      * Create a new activity
      * POST /api/v1/activities
-     * Only ORGANIZER and ADMIN can create activities
+     * Only ORGANIZER  can create activities
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('ORGANIZER')")
