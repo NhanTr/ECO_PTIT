@@ -18,10 +18,15 @@ public class APIResponse<T> {
     int code;
     String message;
     T result;
-    
-    public static <T> APIResponseBuilder<T> builder() {
-        return new APIResponseBuilder<>();
+
+    public static <T> APIResponse<T> response(T result) {
+        return APIResponse.<T>builder()
+                .code(200)
+                .message("Success")
+                .result(result)
+                .build();
     }
+
     
     public static class APIResponseBuilder<T> {
         private int code;

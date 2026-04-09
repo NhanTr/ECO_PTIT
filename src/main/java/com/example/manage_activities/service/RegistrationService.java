@@ -1,6 +1,6 @@
 package com.example.manage_activities.service;
 
-import com.example.manage_activities.dto.request.RegistrationRequest;
+
 import com.example.manage_activities.dto.response.RegistrationResponse;
 import com.example.manage_activities.entity.Registration;
 import com.example.manage_activities.exception.AppException;

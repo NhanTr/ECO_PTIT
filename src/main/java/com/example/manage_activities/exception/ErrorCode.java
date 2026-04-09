@@ -18,7 +18,9 @@ public enum ErrorCode {
     BAD_REQUEST(1009, "Bad request", HttpStatus.BAD_REQUEST),
     EMAIL_EXISTED(1010, "Email existed", HttpStatus.BAD_REQUEST),
     NO_REGISTRATIONS(1011, "No registrations found for user", HttpStatus.NOT_FOUND),
-    EXIST_REGISTRATIONS(1012, "User is already registered for this activity", HttpStatus.BAD_REQUEST)
+    EXIST_REGISTRATIONS(1012, "User is already registered for this activity", HttpStatus.BAD_REQUEST),
+    EXIST_PROFILE(1013, "Profile already exists for this user", HttpStatus.BAD_REQUEST),
+    DONT_EXIST_PROFILE(1014, "Profile not found for this user", HttpStatus.NOT_FOUND)
     ;
 
 
