@@ -2,8 +2,8 @@ package com.example.manage_activities.enums;
 
 public enum Roles {
     ADMIN,
-    ORGANIZER,
     MANAGER,
+    ORGANIZER,
     STUDENT;
     
     public static String getNameById(Integer roleId) {
