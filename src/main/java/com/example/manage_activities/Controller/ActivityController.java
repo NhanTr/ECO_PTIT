@@ -33,7 +33,7 @@ public class ActivityController {
      * Only ORGANIZER and ADMIN can create activities
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ORGANIZER')")
     public ResponseEntity<ActivityResponse> createActivity(@Valid @RequestBody ActivityCreateRequest request) {
         log.info("Create activity request received for title: {}", request.getTitle());
         ActivityResponse response = activityService.createActivity(request);
