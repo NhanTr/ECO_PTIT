@@ -90,8 +90,8 @@ public class ActivityService {
     /**
      * Reject activity so it can be publicly available.
      */
-    public ActivityResponse rejectActivity(String id) {
-        log.info("Rejecting activity with ID: {}", id);
+    public ActivityResponse rejectActivity(String id, String reason) {
+        log.info("Rejecting activity with ID: {}, reason: {}", id, reason);
 
         Activity activity = activityRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ACTIVITY_NOT_FOUND));

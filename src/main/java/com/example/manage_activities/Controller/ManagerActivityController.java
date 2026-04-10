@@ -1,7 +1,9 @@
 package com.example.manage_activities.Controller;
 
-import com.example.manage_activities.dto.response.ActivityResponse;
+import com.example.manage_activities.dto.request.RejectActivityRequest;
+import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.service.ActivityService;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -21,26 +23,34 @@ public class ManagerActivityController {
 
     /**
      * Approve activity to be publicly available.
-     * PATCH /api/manager/activities/{id}/approve
+     * Patch /api/manager/activities/{id}/approve
      */
-    @PatchMapping ("/{id}/approve")
+    @PatchMapping("/{id}/approve")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<ActivityResponse> approveActivity(@PathVariable String id) {
+    public ResponseEntity<APIResponse<Void>> approveActivity(@PathVariable String id) {
         log.info("Approve activity request received for ID: {}", id);
-        ActivityResponse activity = activityService.approveActivity(id);
-        return ResponseEntity.ok(activity);
+        activityService.approveActivity(id);
+        return ResponseEntity.ok(APIResponse.<Void>builder()
+                .code(1000)
+                .message("Hoat dong da duoc duyet")
+                .build());
     }
 
     /**
-     * Reject activity to be publicly available.
-     * PATCH /api/manager/activities/{id}/reject
+     * Reject activity.
+     * Patch /api/manager/activities/{id}/reject
      */
-    @PatchMapping ("/{id}/reject")
+    @PatchMapping("/{id}/reject")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<ActivityResponse> rejectActivity(@PathVariable String id) {
-        log.info("Reject activity request received for ID: {}", id);
-        ActivityResponse activity = activityService.rejectActivity(id);
-        return ResponseEntity.ok(activity);
+    public ResponseEntity<APIResponse<Void>> rejectActivity(
+            @PathVariable String id,
+            @Valid @RequestBody RejectActivityRequest request) {
+        log.info("Reject activity request received for ID: {}, reason: {}", id, request.getReason());
+        activityService.rejectActivity(id, request.getReason());
+        return ResponseEntity.ok(APIResponse.<Void>builder()
+                .code(1000)
+                .message("Da tu choi")
+                .build());
     }
 }
 
