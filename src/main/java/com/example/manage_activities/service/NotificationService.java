@@ -60,6 +60,23 @@ public class NotificationService {
 		return userRepository.findByRoleIdAndIdIn(STUDENT_ROLE_ID, studentIds);
 	}
 
+
+	@Transactional
+	public void sendParticipationRejectedNotification(String studentId, String activityId, String reason) {
+		Notification notification = Notification.builder()
+				.id(generateNotificationId())
+				.receiverId(studentId)
+				.title("Dang ky hoat dong bi tu choi")
+				.content("Dang ky tham gia hoat dong " + activityId + " bi tu choi. Ly do: " + reason)
+				.type("Activity")
+				.isRead(false)
+				.createdAt(LocalDateTime.now())
+				.build();
+
+		notificationRepository.save(notification);
+		log.info("Sent rejection notification to student: {} for activity: {}", studentId, activityId);
+	}
+
 	private String generateNotificationId() {
 		String id = UUID.randomUUID().toString().substring(0, 10);
 		while (notificationRepository.existsById(id)) {

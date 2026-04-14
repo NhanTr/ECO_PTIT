@@ -19,7 +19,11 @@ public enum ErrorCode {
     EMAIL_EXISTED(1010, "Email existed", HttpStatus.BAD_REQUEST),
     ACTIVITY_NOT_FOUND(1011, "Activity not found", HttpStatus.NOT_FOUND),
     ACTIVITY_ALREADY_APPROVED(1012, "Activity has already been approved", HttpStatus.BAD_REQUEST),
-    ACTIVITY_ALREADY_REJECTED(1013, "Activity has already been rejected", HttpStatus.BAD_REQUEST);
+    ACTIVITY_ALREADY_REJECTED(1013, "Activity has already been rejected", HttpStatus.BAD_REQUEST),
+    REGISTRATION_NOT_FOUND(1014, "Registration not found", HttpStatus.NOT_FOUND),
+    REGISTRATION_ALREADY_APPROVED(1015, "Registration has already been approved", HttpStatus.BAD_REQUEST),
+    REGISTRATION_CANCELLED(1016, "Registration was cancelled", HttpStatus.BAD_REQUEST),
+    REGISTRATION_ALREADY_REJECTED(1017, "Registration has already been rejected", HttpStatus.BAD_REQUEST);
 
 
     private int code;

@@ -33,6 +33,7 @@ public class RegistrationController {
      * POST /api/v1/registrations
      */
     @PostMapping
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<RegistrationResponse> registerActivity(@Valid @RequestBody RegistrationRequest request) {
         log.info("Register activity request received for activity: {}", request.getActivityId());
         RegistrationResponse response = registrationService.registerActivity(request);
@@ -44,6 +45,7 @@ public class RegistrationController {
      * DELETE /api/v1/registrations/{activityId}
      */
     @DeleteMapping("/{activityId}")
+    @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<Void> unregisterActivity(@PathVariable String activityId) {
         log.info("Unregister activity request received for activity: {}", activityId);
         registrationService.unregisterActivity(activityId);
@@ -89,5 +91,5 @@ public class RegistrationController {
                 .result(count)
                 .build();
     }
-    
+
 }

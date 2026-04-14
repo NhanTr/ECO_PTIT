@@ -27,6 +27,6 @@ public class Registration {
     @Column(name = "student_id", length = 10)
     String studentId;
 
-    String status; // Registered, Cancelled
+    String status; // Registered, Rejected, Cancelled
     LocalDateTime createdAt;
 }

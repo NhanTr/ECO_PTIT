@@ -1,14 +1,17 @@
 package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.request.NotificationCreateRequest;
+import com.example.manage_activities.entity.Notification;
 import com.example.manage_activities.entity.User;
 import com.example.manage_activities.repository.NotificationRepository;
 import com.example.manage_activities.repository.UserRepository;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -78,6 +81,23 @@ class NotificationServiceTest {
 
         assertEquals(0, sentCount);
         verify(userRepository).findByRoleId(4);
+    }
+
+    @Test
+    void sendParticipationRejectedNotification_shouldSaveOneNotification() {
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+
+        notificationService.sendParticipationRejectedNotification(
+                "std0000001",
+                "act0000001",
+                "Thieu thong tin kinh phi"
+        );
+
+        verify(notificationRepository).save(captor.capture());
+        Notification saved = captor.getValue();
+        assertEquals("std0000001", saved.getReceiverId());
+        assertEquals("Activity", saved.getType());
+        assertTrue(saved.getContent().contains("Ly do: Thieu thong tin kinh phi"));
     }
 }
 
