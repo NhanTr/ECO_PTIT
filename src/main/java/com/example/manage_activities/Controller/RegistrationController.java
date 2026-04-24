@@ -1,16 +1,13 @@
 package com.example.manage_activities.Controller;
 
-import com.example.manage_activities.dto.request.RegistrationRequest;
 import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.dto.response.RegistrationResponse;
 import com.example.manage_activities.service.RegistrationService;
-import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,14 +27,16 @@ public class RegistrationController {
     
     /**
      * Register for activity
-     * POST /api/v1/registrations
+     * POST /api/v1/registrations/{activityId}
      */
-    @PostMapping
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<RegistrationResponse> registerActivity(@Valid @RequestBody RegistrationRequest request) {
-        log.info("Register activity request received for activity: {}", request.getActivityId());
-        RegistrationResponse response = registrationService.registerActivity(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    @PostMapping("/{activityId}")
+    @PreAuthorize("hasRole('STUDENT')") // Only STUDENT can register for activities
+    public APIResponse<RegistrationResponse> registerActivity(@PathVariable String activityId) {
+        log.info("Register activity request received for activity: {}", activityId);
+        registrationService.registerActivity(activityId);
+        return APIResponse.<RegistrationResponse>builder()
+                .result(null)
+                .build();
     }
     
     /**
@@ -45,11 +44,13 @@ public class RegistrationController {
      * DELETE /api/v1/registrations/{activityId}
      */
     @DeleteMapping("/{activityId}")
-    @PreAuthorize("hasRole('STUDENT')")
-    public ResponseEntity<Void> unregisterActivity(@PathVariable String activityId) {
+    @PreAuthorize("hasRole('STUDENT')") // Only STUDENT and OWNER can unregister from activities
+    public APIResponse<Void> unregisterActivity(@PathVariable String activityId) {
         log.info("Unregister activity request received for activity: {}", activityId);
         registrationService.unregisterActivity(activityId);
-        return ResponseEntity.noContent().build();
+        return APIResponse.<Void>builder()
+                .result(null)
+                .build();
     }
     
     /**

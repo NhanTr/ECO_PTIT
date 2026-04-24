@@ -7,17 +7,21 @@ import com.example.manage_activities.dto.response.UserResponse;
 import com.example.manage_activities.service.UserService;
 import com.example.manage_activities.dto.request.ChangePasswordRequest;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import com.opencsv.CSVWriter;
 
+
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.List;
 
 @RestController
@@ -36,10 +40,10 @@ public class UserController {
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserCreateRequest request) {
+    public APIResponse<UserResponse> createUser(@Valid @RequestBody UserCreateRequest request) {
         log.info("Create user request received for username: {}", request.getUsername());
         UserResponse response = userService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return APIResponse.response(response);
     }
     
     /**
@@ -121,5 +125,31 @@ public class UserController {
                 .result(null)
                 .message("Password was changed successfully")
                 .build();
+    }
+
+    @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void getAllUsersAsCSV(HttpServletResponse response) throws IOException {
+        log.info("Export users to CSV");
+        
+        response.setContentType("text/csv; charset=UTF-8");
+        response.setHeader("Content-Disposition", 
+            "attachment; filename=\"users_" + System.currentTimeMillis() + ".csv\"");
+        
+        List<UserResponse> users = userService.getAllUsers();
+        
+        try (PrintWriter writer = response.getWriter();
+            CSVWriter csvWriter = new CSVWriter(writer)) {
+            
+            // Header
+            csvWriter.writeNext(new String[]{"ID", "Username", "Email", "Full Name", "Created Date"});
+            
+            // Data
+            users.forEach(user -> csvWriter.writeNext(new String[]{
+                user.getId(),
+                user.getUsername(),
+                user.getEmail()
+            }));
+        }
     }
 }

@@ -19,6 +19,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.http.HttpMethod;
 
 
 
@@ -57,6 +58,7 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.DELETE, "/api/v1/registrations/**").authenticated()
             .requestMatchers(HttpMethod.GET, "/api/v1/registrations/**").authenticated()
                 
+
                 // All other authenticated requests require authentication
                 .anyRequest().authenticated()
         );

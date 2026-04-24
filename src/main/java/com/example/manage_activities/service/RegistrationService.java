@@ -1,6 +1,6 @@
 package com.example.manage_activities.service;
 
-import com.example.manage_activities.dto.request.RegistrationRequest;
+
 import com.example.manage_activities.dto.response.RegistrationResponse;
 import com.example.manage_activities.entity.Registration;
 import com.example.manage_activities.exception.AppException;
@@ -32,28 +32,26 @@ public class RegistrationService {
     /**
      * Register user for activity
      */
-    public RegistrationResponse registerActivity(RegistrationRequest request) {
-        log.info("Registering user for activity: {}", request.getActivityId());
+    public void registerActivity(String activityId) {
+        log.info("Registering user for activity: {}", activityId);
         
         String userId = SecurityContextHolder.getContext().getAuthentication().getName();
         
         // Check if already registered
-        boolean alreadyRegistered = registrationRepository.existsByActivityIdAndStudentId(request.getActivityId(), userId);
+        boolean alreadyRegistered = registrationRepository.existsByActivityIdAndStudentId(activityId, userId);
         
         if (alreadyRegistered) {
-            throw new RuntimeException("User is already registered for this activity");
+            throw new AppException(ErrorCode.EXIST_REGISTRATIONS);
         }
         
-        Registration registration = registrationMapper.toEntity(request);
+        Registration registration = new Registration();
         registration.setId(generateRegistrationId());
+        registration.setActivityId(activityId);
         registration.setStudentId(userId);
         registration.setStatus("Registered");
         registration.setCreatedAt(LocalDateTime.now());
         
-        Registration savedRegistration = registrationRepository.save(registration);
-        log.info("User registered successfully for activity: {}", request.getActivityId());
-        
-        return registrationMapper.toDTO(savedRegistration);
+        registrationRepository.save(registration);
     }
     
     /**
@@ -65,15 +63,15 @@ public class RegistrationService {
         String studentId = SecurityContextHolder.getContext().getAuthentication().getName();
         log.debug("Searching registration - activityId: {}, studentId: {}", activityId, studentId);
         
-        Registration registration = registrationRepository
-                .findByActivityIdAndStudentId(activityId, studentId)
-                .orElseThrow(() -> {
-                    log.warn("Registration not found for activityId: {}, studentId: {}", activityId, studentId);
-                    return new RuntimeException("Registration not found. You may not be registered for this activity.");
-                });
+        String registrationId = registrationRepository.findIdByActivityIdAndStudentId(activityId, studentId);
         
-        registration.setStatus("Cancelled");
-        registrationRepository.save(registration);
+        if (registrationId == null) {
+            log.warn("Registration not found for activityId: {}, studentId: {}", activityId, studentId);
+            throw new AppException(ErrorCode.NO_REGISTRATIONS);
+        }
+
+        registrationRepository.deleteById(registrationId);
+
         log.info("User unregistered successfully from activity: {}", activityId);
     }
     
@@ -89,7 +87,7 @@ public class RegistrationService {
 
         if (registrations.isEmpty()) {
             log.info("No registrations found for user: {}", studentId);
-            throw new RuntimeException("No registrations found for user");
+            throw new AppException(ErrorCode.NO_REGISTRATIONS);
         } else {
             log.info("Found {} registrations for user: {}", registrations.size(), studentId);
         }
