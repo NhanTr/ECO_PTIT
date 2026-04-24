@@ -34,8 +34,16 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.authorizeHttpRequests(request -> request
-                // Public endpoints - no authentication required
-                .requestMatchers("/auth/**").permitAll()
+                // Public auth endpoints - no authentication required
+                .requestMatchers("/auth/token").permitAll()
+                .requestMatchers("/auth/introspect").permitAll()
+                .requestMatchers("/auth/refresh").permitAll()
+                
+                // Protected auth endpoints - requires authentication
+                .requestMatchers("/auth/logout").authenticated()
+                .requestMatchers("/auth/change-password").authenticated()
+                
+                // Public activity endpoints - no authentication required
                 .requestMatchers(HttpMethod.GET, "/api/v1/activities/**").permitAll()
                 
                 // User endpoints - ADMIN only

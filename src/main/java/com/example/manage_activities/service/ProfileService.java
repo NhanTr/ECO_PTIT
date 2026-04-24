@@ -1,11 +1,14 @@
 package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.request.ProfileRequest;
+import com.example.manage_activities.dto.response.ProfileResponse;
 import com.example.manage_activities.repository.ProfileRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
+
 import com.example.manage_activities.entity.Profile;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
+import com.example.manage_activities.mapper.ProfileMapper;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +25,20 @@ import java.util.UUID;
 public class ProfileService {
     
     ProfileRepository profileRepository;
+    ProfileMapper profileMapper;
+
+    public ProfileResponse getProfile() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        Profile profile = profileRepository.findByUserId(userId);
+        if (profile == null) {
+            log.info("Profile not found for user: {}", userId);
+            throw new AppException(ErrorCode.DONT_EXIST_PROFILE);
+        }
+
+        ProfileResponse response = profileMapper.toDTO(profile);
+        return response;
+    }
+
 
     public void createProfile(ProfileRequest request) {
         String userId = SecurityContextHolder.getContext().getAuthentication().getName();

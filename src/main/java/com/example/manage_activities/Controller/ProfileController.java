@@ -8,7 +8,10 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.manage_activities.dto.request.ProfileRequest;
 import com.example.manage_activities.dto.response.APIResponse;
+import com.example.manage_activities.dto.response.ProfileResponse;
 import com.example.manage_activities.service.ProfileService;
+import org.springframework.web.bind.annotation.GetMapping;
+
 
 
 
@@ -27,6 +30,13 @@ public class ProfileController {
      * PUT /api/v1/profile
      * Only authenticated users can update their profile
      */
+
+    @GetMapping
+    public APIResponse<ProfileResponse> getProfile() {
+        ProfileResponse response = profileService.getProfile();
+        return APIResponse.<ProfileResponse>response(response);
+    }
+    
     
     @PostMapping
     public APIResponse<Void> createProfile(@RequestBody ProfileRequest request) {
@@ -42,5 +52,6 @@ public class ProfileController {
                 .result(null)
                 .build();
     }
+    
     
 }

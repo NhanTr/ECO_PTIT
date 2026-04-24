@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -115,7 +116,20 @@ public class RegistrationService {
         log.info("Getting registration count for activity: {}", activityId);
         return registrationRepository.countByActivityId(activityId);
     }
+    /**
+     * Get user IDs for activityID 
+     * @return
+     */
 
+    public List<String> getPaticipantID(String activityId) {
+        List<Registration> registrations = registrationRepository.findByActivityId(activityId);
+        
+        List<String> userList = new ArrayList<>();
+        for (Registration reg : registrations) {
+            userList.add(reg.getStudentId());
+        }
+        return userList;
+    }
 
     /**
      * Generate a unique ID for the registration

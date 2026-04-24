@@ -2,6 +2,7 @@ package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.request.ActivityCreateRequest;
 import com.example.manage_activities.dto.response.ActivityResponse;
+import com.example.manage_activities.dto.response.PageMode;
 import com.example.manage_activities.entity.Activity;
 import com.example.manage_activities.mapper.ActivityMapper;
 import com.example.manage_activities.repository.ActivityRepository;
@@ -11,11 +12,14 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -65,37 +69,64 @@ public class ActivityService {
     }
     
     /**
-     * Get all activities with pagination
+     * Get all activities with optional filters and pagination
+     * Supports filtering by status, sponsor, startTime, endTime, and location
      */
-    public Page<ActivityResponse> getAllActivities(Pageable pageable) {
-        log.info("Getting activities with pagination - page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
+    public PageMode<ActivityResponse> getAllActivities(String status, String sponsor, String startTime, String endTime, String location, Pageable pageable) {
+        log.info("Getting activities with filters - status: {}, sponsor: {}, startTime: {}, endTime: {}, location: {}", 
+                status, sponsor, startTime, endTime, location);
         
-        Page<Activity> activities = activityRepository.findAll(pageable);
-        return activities.map(activityMapper::toDTO);
-    }
-    
-    /**
-     * Get activities by organizer
-     */
-    public List<ActivityResponse> getActivityByOrganizer(String organizerId) {
-        log.info("Getting activities for organizer: {}", organizerId);
+        // Build dynamic specification based on provided filters
+        Specification<Activity> spec = Specification.where((root, query, cb) -> cb.conjunction());
         
-        return activityRepository.findByOrganizerId(organizerId)
-                .stream()
-                .map(activityMapper::toDTO)
-                .collect(Collectors.toList());
-    }
-    
-    /**
-     * Get activities by status
-     */
-    public List<ActivityResponse> getActivityByStatus(String status) {
-        log.info("Getting activities with status: {}", status);
+        if (status != null && !status.trim().isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+            log.info("Applied filter: status = {}", status);
+        }
         
-        return activityRepository.findByStatus(status)
-                .stream()
-                .map(activityMapper::toDTO)
-                .collect(Collectors.toList());
+        if (sponsor != null && !sponsor.trim().isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("sponsor")), "%" + sponsor.toLowerCase() + "%"));
+            log.info("Applied filter: sponsor contains {}", sponsor);
+        }
+        
+        if (location != null && !location.trim().isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("location")), "%" + location.toLowerCase() + "%"));
+            log.info("Applied filter: location contains {}", location);
+        }
+        
+        if (startTime != null && !startTime.trim().isEmpty()) {
+            try {
+                LocalDateTime startDateTime = parseDateTimeFilter(startTime, false);
+                spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("startTime"), startDateTime));
+                log.info("Applied filter: startTime >= {}", startDateTime);
+            } catch (DateTimeParseException e) {
+                log.warn("Invalid startTime format: {}", startTime);
+            }
+        }
+
+        if (endTime != null && !endTime.trim().isEmpty()) {
+            try {
+                LocalDateTime endDateTime = parseDateTimeFilter(endTime, true);
+                spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("endTime"), endDateTime));
+                log.info("Applied filter: endTime <= {}", endDateTime);
+            } catch (DateTimeParseException e) {
+                log.warn("Invalid endTime format: {}", endTime);
+            }
+        }
+        
+        Page<Activity> activities = activityRepository.findAll(spec, pageable);
+        
+        // Convert Page<Activity> to PageMode<ActivityResponse>
+        return PageMode.<ActivityResponse>builder()
+                .content(activities.getContent().stream().map(activityMapper::toDTO).collect(Collectors.toList()))
+                .pageNumber(activities.getNumber())
+                .pageSize(activities.getSize())
+                .totalElements(activities.getTotalElements())
+                .totalPages(activities.getTotalPages())
+                .isFirst(activities.isFirst())
+                .isLast(activities.isLast())
+                .isEmpty(activities.isEmpty())
+                .build();
     }
 
     /**
@@ -108,5 +139,19 @@ public class ActivityService {
             id = UUID.randomUUID().toString().substring(0, 10);
         }
         return id;
+    }
+
+    /**
+     * Parse filter value as either yyyy-MM-dd or ISO local date-time (e.g. yyyy-MM-ddTHH:mm[:ss]).
+     */
+    private LocalDateTime parseDateTimeFilter(String value, boolean endBoundary) {
+        String trimmedValue = value.trim();
+
+        if (trimmedValue.contains("T")) {
+            return LocalDateTime.parse(trimmedValue, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        }
+
+        LocalDate date = LocalDate.parse(trimmedValue, DateTimeFormatter.ISO_LOCAL_DATE);
+        return endBoundary ? date.atTime(23, 59, 59) : date.atStartOfDay();
     }
 }

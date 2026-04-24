@@ -13,5 +13,44 @@
     "name": "jwt.refresh-duration",
     "type": "java.lang.String",
     "description": "A description for 'jwt.refresh-duration'"
+  },
+  {
+    "name": "spring.datasource-fallback.url",
+    "type": "java.lang.String",
+    "description": "Fallback database connection URL (e.g., localhost MySQL)"
+  },
+  {
+    "name": "spring.datasource-fallback.username",
+    "type": "java.lang.String",
+    "description": "Fallback database username"
+  },
+  {
+    "name": "spring.datasource-fallback.password",
+    "type": "java.lang.String",
+    "description": "Fallback database password"
+  },
+  {
+    "name": "spring.datasource-fallback.driver-class-name",
+    "type": "java.lang.String",
+    "description": "Fallback database driver class name",
+    "defaultValue": "com.mysql.cj.jdbc.Driver"
+  },
+  {
+    "name": "spring.datasource-fallback.hikari.maximum-pool-size",
+    "type": "java.lang.Integer",
+    "description": "Maximum number of connections in fallback datasource pool",
+    "defaultValue": 5
+  },
+  {
+    "name": "spring.datasource-fallback.hikari.minimum-idle",
+    "type": "java.lang.Integer",
+    "description": "Minimum idle connections in fallback datasource pool",
+    "defaultValue": 2
+  },
+  {
+    "name": "spring.datasource-fallback.hikari.connection-timeout",
+    "type": "java.lang.Integer",
+    "description": "Connection timeout for fallback datasource in milliseconds",
+    "defaultValue": 20000
   }
 ]}
