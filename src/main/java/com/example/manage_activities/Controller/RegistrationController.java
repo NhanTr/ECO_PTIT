@@ -71,6 +71,7 @@ public class RegistrationController {
      * GET /api/v1/registrations/activity/{activityId}
      */
     @GetMapping("/activity/{activityId}")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN','MANAGER')")
     public APIResponse<List<RegistrationResponse>> getActivityRegistrations(@PathVariable String activityId) {
         log.info("Get activity registrations request received for activity: {}", activityId);
         List<RegistrationResponse> registrations = registrationService.getActivityRegistrations(activityId);
@@ -91,5 +92,5 @@ public class RegistrationController {
                 .result(count)
                 .build();
     }
-    
+
 }

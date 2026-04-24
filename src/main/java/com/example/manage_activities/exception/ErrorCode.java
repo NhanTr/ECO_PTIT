@@ -20,8 +20,14 @@ public enum ErrorCode {
     NO_REGISTRATIONS(1011, "No registrations found for user", HttpStatus.NOT_FOUND),
     EXIST_REGISTRATIONS(1012, "User is already registered for this activity", HttpStatus.BAD_REQUEST),
     EXIST_PROFILE(1013, "Profile already exists for this user", HttpStatus.BAD_REQUEST),
-    DONT_EXIST_PROFILE(1014, "Profile not found for this user", HttpStatus.NOT_FOUND)
-    ;
+    DONT_EXIST_PROFILE(1014, "Profile not found for this user", HttpStatus.NOT_FOUND),
+    ACTIVITY_NOT_FOUND(1018, "Activity not found", HttpStatus.NOT_FOUND),
+    ACTIVITY_ALREADY_APPROVED(1019, "Activity has already been approved", HttpStatus.BAD_REQUEST),
+    ACTIVITY_ALREADY_REJECTED(1020, "Activity has already been rejected", HttpStatus.BAD_REQUEST),
+    REGISTRATION_NOT_FOUND(1021, "Registration not found", HttpStatus.NOT_FOUND),
+    REGISTRATION_ALREADY_APPROVED(1015, "Registration has already been approved", HttpStatus.BAD_REQUEST),
+    REGISTRATION_CANCELLED(1016, "Registration was cancelled", HttpStatus.BAD_REQUEST),
+    REGISTRATION_ALREADY_REJECTED(1017, "Registration has already been rejected", HttpStatus.BAD_REQUEST);
 
 
     private int code;

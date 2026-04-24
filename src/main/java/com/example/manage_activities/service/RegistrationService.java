@@ -27,7 +27,8 @@ public class RegistrationService {
     
     RegistrationRepository registrationRepository;
     RegistrationMapper registrationMapper;
-    
+    NotificationService notificationService;
+
     /**
      * Register user for activity
      */
@@ -114,6 +115,40 @@ public class RegistrationService {
     public Long getActivityRegistrationCount(String activityId) {
         log.info("Getting registration count for activity: {}", activityId);
         return registrationRepository.countByActivityId(activityId);
+    }
+
+
+
+    /**
+     * Reject one registered student in an activity and notify the student.
+     */
+    public void rejectRegistration(String activityId, String studentId, String reason) {
+        log.info("Rejecting registration for activityId: {}, studentId: {}", activityId, studentId);
+
+        Registration registration = registrationRepository
+                .findByActivityIdAndStudentId(activityId, studentId)
+                .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_NOT_FOUND));
+
+        if (!"Registered".equalsIgnoreCase(registration.getStatus())) {
+            if ("Rejected".equalsIgnoreCase(registration.getStatus())) {
+                throw new AppException(ErrorCode.REGISTRATION_ALREADY_REJECTED);
+            }
+            if ("Cancelled".equalsIgnoreCase(registration.getStatus())) {
+                throw new AppException(ErrorCode.REGISTRATION_CANCELLED);
+            }
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+
+        registration.setStatus("Rejected");
+        registrationRepository.save(registration);
+
+        notificationService.sendParticipationRejectedNotification(
+                registration.getStudentId(),
+                registration.getActivityId(),
+                reason
+        );
+
+        log.info("Registration rejected and notification sent for activityId: {}, studentId: {}", activityId, studentId);
     }
 
 

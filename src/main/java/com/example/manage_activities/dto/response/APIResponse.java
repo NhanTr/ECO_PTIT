@@ -32,22 +32,22 @@ public class APIResponse<T> {
         private int code;
         private String message;
         private T result;
-        
+
         public APIResponseBuilder<T> code(int code) {
             this.code = code;
             return this;
         }
-        
+
         public APIResponseBuilder<T> message(String message) {
             this.message = message;
             return this;
         }
-        
+
         public APIResponseBuilder<T> result(T result) {
             this.result = result;
             return this;
         }
-        
+
         public APIResponse<T> build() {
             APIResponse<T> response = new APIResponse<>();
             response.code = this.code != 0 ? this.code : 200;

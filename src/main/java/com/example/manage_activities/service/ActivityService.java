@@ -3,6 +3,8 @@ package com.example.manage_activities.service;
 import com.example.manage_activities.dto.request.ActivityCreateRequest;
 import com.example.manage_activities.dto.response.ActivityResponse;
 import com.example.manage_activities.entity.Activity;
+import com.example.manage_activities.exception.AppException;
+import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.ActivityMapper;
 import com.example.manage_activities.repository.ActivityRepository;
 import lombok.AccessLevel;
@@ -59,11 +61,53 @@ public class ActivityService {
         log.info("Getting activity with ID: {}", id);
         
         Activity activity = activityRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Activity not found with ID: " + id));
+                .orElseThrow(() -> new AppException(ErrorCode.ACTIVITY_NOT_FOUND));
         
         return activityMapper.toDTO(activity);
     }
-    
+
+    /**
+     * Approve activity so it can be publicly available.
+     */
+    public ActivityResponse approveActivity(String id) {
+        log.info("Approving activity with ID: {}", id);
+
+        Activity activity = activityRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ACTIVITY_NOT_FOUND));
+
+        if ("Approved".equalsIgnoreCase(activity.getStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_ALREADY_APPROVED);
+        }
+
+        String reviewerId = SecurityContextHolder.getContext().getAuthentication().getName();
+        activity.setStatus("Approved");
+        activity.setReviewerId(reviewerId);
+
+        Activity savedActivity = activityRepository.save(activity);
+        return activityMapper.toDTO(savedActivity);
+    }
+
+    /**
+     * Reject activity so it can be publicly available.
+     */
+    public ActivityResponse rejectActivity(String id, String reason) {
+        log.info("Rejecting activity with ID: {}, reason: {}", id, reason);
+
+        Activity activity = activityRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ACTIVITY_NOT_FOUND));
+
+        if ("Rejected".equalsIgnoreCase(activity.getStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_ALREADY_REJECTED);
+        }
+
+        String reviewerId = SecurityContextHolder.getContext().getAuthentication().getName();
+        activity.setStatus("Rejected");
+        activity.setReviewerId(reviewerId);
+
+        Activity savedActivity = activityRepository.save(activity);
+        return activityMapper.toDTO(savedActivity);
+    }
+
     /**
      * Get all activities with pagination
      */

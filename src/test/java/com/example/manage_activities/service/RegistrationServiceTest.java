@@ -1,0 +1,66 @@
+package com.example.manage_activities.service;
+
+import com.example.manage_activities.entity.Registration;
+import com.example.manage_activities.exception.AppException;
+import com.example.manage_activities.exception.ErrorCode;
+import com.example.manage_activities.mapper.RegistrationMapper;
+import com.example.manage_activities.repository.RegistrationRepository;
+import org.junit.jupiter.api.Test;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class RegistrationServiceTest {
+
+    private final RegistrationRepository registrationRepository = mock(RegistrationRepository.class);
+    private final RegistrationMapper registrationMapper = mock(RegistrationMapper.class);
+    private final NotificationService notificationService = mock(NotificationService.class);
+    private final RegistrationService registrationService =
+            new RegistrationService(registrationRepository, registrationMapper, notificationService);
+
+    @Test
+    void rejectRegistration_shouldRejectRegisteredStudentAndSendNotification() {
+        Registration registration = Registration.builder()
+                .id("reg1234567")
+                .activityId("act1234567")
+                .studentId("std1234567")
+                .status("Registered")
+                .build();
+
+        when(registrationRepository.findByActivityIdAndStudentId("act1234567", "std1234567"))
+                .thenReturn(Optional.of(registration));
+        when(registrationRepository.save(any(Registration.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        registrationService.rejectRegistration("act1234567", "std1234567", "Khong du dieu kien");
+
+        assertEquals("Rejected", registration.getStatus());
+        verify(registrationRepository).save(registration);
+        verify(notificationService).sendParticipationRejectedNotification("std1234567", "act1234567", "Khong du dieu kien");
+    }
+
+
+    @Test
+    void rejectRegistration_shouldThrowWhenAlreadyRejected() {
+        Registration registration = Registration.builder()
+                .id("reg1234567")
+                .activityId("act1234567")
+                .studentId("std1234567")
+                .status("Rejected")
+                .build();
+
+        when(registrationRepository.findByActivityIdAndStudentId("act1234567", "std1234567"))
+                .thenReturn(Optional.of(registration));
+
+        AppException exception = assertThrows(AppException.class,
+                () -> registrationService.rejectRegistration("act1234567", "std1234567", "Invalid"));
+
+        assertEquals(ErrorCode.REGISTRATION_ALREADY_REJECTED, exception.getErrorCode());
+    }
+}
+

@@ -30,10 +30,10 @@ public class ActivityController {
     /**
      * Create a new activity
      * POST /api/v1/activities
-     * Only ORGANIZER and ADMIN can create activities
+     * Only ORGANIZER  can create activities
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ORGANIZER')")
     public ResponseEntity<ActivityResponse> createActivity(@Valid @RequestBody ActivityCreateRequest request) {
         log.info("Create activity request received for title: {}", request.getTitle());
         ActivityResponse response = activityService.createActivity(request);
@@ -85,6 +85,7 @@ public class ActivityController {
      * GET /api/v1/activities/status/{status}
      */
     @GetMapping("/status/{status}")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     public APIResponse<List<ActivityResponse>> getActivityByStatus(@PathVariable String status) {
         log.info("Get activities request received for status: {}", status);
         List<ActivityResponse> activities = activityService.getActivityByStatus(status);

@@ -14,11 +14,12 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RegistrationResponse {
-    
+public class NotificationResponse {
     String id;
-    String activityId;
-    String studentId;
-    String status;  // Registered,  Rejected, Cancelled
+    String receiverId;
+    String title;
+    String content;
+    Boolean isRead;
+    String type;
     LocalDateTime createdAt;
 }
