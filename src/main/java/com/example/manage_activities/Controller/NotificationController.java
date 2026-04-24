@@ -46,7 +46,7 @@ public class NotificationController {
     }
 
     /**
-     * Send update notifications to student groups.
+     * Send notifications to users (all users for System type or empty recipient list).
      * POST /api/notifications
      */
     @PostMapping
@@ -55,7 +55,7 @@ public class NotificationController {
             @Valid @RequestBody NotificationCreateRequest request) {
         log.info("Send notifications request received, type: {}", request.getType());
 
-        int sentCount = notificationService.sendNotificationsToStudents(request);
+        int sentCount = notificationService.sendNotifications(request);
         return ResponseEntity.ok(APIResponse.<Integer>builder()
                 .code(1000)
                 .message("Gui thong bao thanh cong")

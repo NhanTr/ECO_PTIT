@@ -28,7 +28,16 @@ public class NotificationCreateRequest {
     @Builder.Default
     String type = "System";
 
-    // If empty, the notification is sent to all students.
-    List<String> studentIds;
+    // If empty, the notification is sent to all users.
+    List<String> userIds;
+
+
+
+    public List<String> getRecipientIds() {
+        if (userIds != null) {
+            return userIds;
+        }
+        return List.of(); // Return an empty list if userIds is null, indicating a broadcast notification
+    }
 }
 

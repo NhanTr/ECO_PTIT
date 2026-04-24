@@ -4,6 +4,8 @@ import com.example.manage_activities.dto.request.NotificationCreateRequest;
 import com.example.manage_activities.dto.response.NotificationResponse;
 import com.example.manage_activities.entity.Notification;
 import com.example.manage_activities.entity.User;
+import com.example.manage_activities.exception.AppException;
+import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.repository.NotificationRepository;
 import com.example.manage_activities.repository.UserRepository;
 import lombok.AccessLevel;
@@ -11,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,8 +26,6 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class NotificationService {
-
-	static final int STUDENT_ROLE_ID = 4;
 
 	NotificationRepository notificationRepository;
 	UserRepository userRepository;
@@ -40,10 +41,12 @@ public class NotificationService {
 	}
 
 	@Transactional
-	public int sendNotificationsToStudents(NotificationCreateRequest request) {
-		List<User> recipients = resolveRecipients(request.getStudentIds());
+	public int sendNotifications(NotificationCreateRequest request) {
+		validateSystemNotificationPermission(request);
+
+		List<User> recipients = resolveRecipients(request);
 		if (recipients.isEmpty()) {
-			log.info("No student recipients found for notification");
+			log.info("No recipients found for notification");
 			return 0;
 		}
 
@@ -65,11 +68,31 @@ public class NotificationService {
 		return notifications.size();
 	}
 
-	private List<User> resolveRecipients(List<String> studentIds) {
-		if (studentIds == null || studentIds.isEmpty()) {
-			return userRepository.findByRoleId(STUDENT_ROLE_ID);
+	private List<User> resolveRecipients(NotificationCreateRequest request) {
+		List<String> recipientIds = request.getRecipientIds();
+
+		if ("System".equalsIgnoreCase(request.getType()) || recipientIds == null || recipientIds.isEmpty()) {
+			return userRepository.findAll();
 		}
-		return userRepository.findByRoleIdAndIdIn(STUDENT_ROLE_ID, studentIds);
+		return userRepository.findByIdIn(recipientIds);
+	}
+
+	private void validateSystemNotificationPermission(NotificationCreateRequest request) {
+		if (!"System".equalsIgnoreCase(request.getType())) {
+			return;
+		}
+
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null || !authentication.isAuthenticated()) {
+			throw new AppException(ErrorCode.UNAUTHENTICATED);
+		}
+
+		boolean isAdmin = authentication.getAuthorities().stream()
+				.anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+
+		if (!isAdmin) {
+			throw new AppException(ErrorCode.UNAUTHORIZED);
+		}
 	}
 
 
