@@ -1,6 +1,7 @@
 package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.request.NotificationCreateRequest;
+import com.example.manage_activities.dto.response.NotificationResponse;
 import com.example.manage_activities.entity.Notification;
 import com.example.manage_activities.entity.User;
 import com.example.manage_activities.repository.NotificationRepository;
@@ -9,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,16 @@ public class NotificationService {
 
 	NotificationRepository notificationRepository;
 	UserRepository userRepository;
+
+	public List<NotificationResponse> getMyNotifications() {
+		String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+		log.info("Getting notifications for user: {}", userId);
+
+		return notificationRepository.findByReceiverIdOrderByCreatedAtDesc(userId)
+				.stream()
+				.map(this::toResponse)
+				.toList();
+	}
 
 	@Transactional
 	public int sendNotificationsToStudents(NotificationCreateRequest request) {
@@ -83,5 +95,17 @@ public class NotificationService {
 			id = UUID.randomUUID().toString().substring(0, 10);
 		}
 		return id;
+	}
+
+	private NotificationResponse toResponse(Notification notification) {
+		return NotificationResponse.builder()
+				.id(notification.getId())
+				.receiverId(notification.getReceiverId())
+				.title(notification.getTitle())
+				.content(notification.getContent())
+				.isRead(notification.getIsRead())
+				.type(notification.getType())
+				.createdAt(notification.getCreatedAt())
+				.build();
 	}
 }

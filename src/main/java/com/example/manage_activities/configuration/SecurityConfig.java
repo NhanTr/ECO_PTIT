@@ -49,6 +49,7 @@ public class SecurityConfig {
             .requestMatchers(HttpMethod.PUT, "/api/v1/activities/**").hasAnyRole("ORGANIZER", "ADMIN")
             .requestMatchers(HttpMethod.DELETE, "/api/v1/activities/**").hasAnyRole("ORGANIZER", "ADMIN")
             .requestMatchers(HttpMethod.POST, "/api/manager/activities/**").hasRole("MANAGER")
+            .requestMatchers(HttpMethod.GET, "/api/notifications").authenticated()
             .requestMatchers(HttpMethod.POST, "/api/notifications").hasAnyRole("ADMIN", "MANAGER")
 
                 // Registration endpoints - all authenticated users

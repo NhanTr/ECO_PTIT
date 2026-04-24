@@ -1,12 +1,17 @@
 package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.request.NotificationCreateRequest;
+import com.example.manage_activities.dto.response.NotificationResponse;
 import com.example.manage_activities.entity.Notification;
 import com.example.manage_activities.entity.User;
 import com.example.manage_activities.repository.NotificationRepository;
 import com.example.manage_activities.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.time.LocalDateTime;
 
 import java.util.List;
 
@@ -98,6 +103,36 @@ class NotificationServiceTest {
         assertEquals("std0000001", saved.getReceiverId());
         assertEquals("Activity", saved.getType());
         assertTrue(saved.getContent().contains("Ly do: Thieu thong tin kinh phi"));
+    }
+
+    @Test
+    void getMyNotifications_shouldReturnNotificationsOfAuthenticatedUser() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("std0000001", "N/A")
+        );
+
+        List<Notification> notifications = List.of(
+                Notification.builder()
+                        .id("noti000001")
+                        .receiverId("std0000001")
+                        .title("Thong bao")
+                        .content("Noi dung")
+                        .type("System")
+                        .isRead(false)
+                        .createdAt(LocalDateTime.now())
+                        .build()
+        );
+
+        when(notificationRepository.findByReceiverIdOrderByCreatedAtDesc("std0000001")).thenReturn(notifications);
+
+        List<NotificationResponse> result = notificationService.getMyNotifications();
+
+        assertEquals(1, result.size());
+        assertEquals("noti000001", result.get(0).getId());
+        assertEquals("std0000001", result.get(0).getReceiverId());
+        verify(notificationRepository).findByReceiverIdOrderByCreatedAtDesc("std0000001");
+
+        SecurityContextHolder.clearContext();
     }
 }
 
