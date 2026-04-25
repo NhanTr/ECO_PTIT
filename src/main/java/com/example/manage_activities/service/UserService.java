@@ -1,6 +1,8 @@
 package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.request.ChangePasswordRequest;
+import com.example.manage_activities.dto.request.ProfileRequest;
+import com.example.manage_activities.dto.request.UserCSVRequest;
 import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserUpdateRequest;
 import com.example.manage_activities.dto.response.UserResponse;
@@ -17,11 +19,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +35,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final CsvService csvService;
+    private final ProfileService profileService;
     
     /**
      * Create a new user
@@ -109,6 +115,7 @@ public class UserService {
         return userRepository.findByEmail(email)
                 .map(userMapper::toDTO);
     }
+
     
     /**
      * Update user information
@@ -187,5 +194,47 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
         log.info("Password changed successfully for user: {}", username);
+    }
+
+
+    /**
+     * Import users from CSV file
+     */
+    @Transactional
+    public void importUsersFromCSV(MultipartFile file) {
+        log.info("Importing users from CSV file: {}", file.getOriginalFilename());
+        try {
+            List<UserCSVRequest> users = csvService.parseCSV(file.getInputStream());
+
+            for (UserCSVRequest userRQ : users) {
+                // 2. Tạo thực thể User (Tài khoản)
+                log.info(userRQ.toString());
+                User user = User.builder()
+                    .id(generateUserId())
+                    .username(userRQ.getStudentId())
+                    .email(userRQ.getEmail())
+                    .passwordHash(passwordEncoder.encode("12345678")) // Mặc định password là "12345678"
+                    .roleId(4)
+                    .status("active")
+                    .createdAt(LocalDateTime.now())
+                    .build();
+                userRepository.save(user);
+
+                // 3. Tạo thực thể Profile (Thông tin chi tiết)
+                ProfileRequest profileRequest = ProfileRequest.builder()
+                    .fullName(userRQ.getFullName())
+                    .phone(userRQ.getPhone())
+                    .department(userRQ.getClassId())
+                    .studentCode(userRQ.getStudentId())
+                    .build();
+                profileService.createProfile(profileRequest, user.getId());
+
+                
+            }
+                
+        } catch (IOException e) {
+            log.error("Error reading CSV file", e);
+            throw new RuntimeException("Failed to import users from CSV file");
+        }
     }
 }

@@ -11,6 +11,9 @@ import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.dto.response.ProfileResponse;
 import com.example.manage_activities.service.ProfileService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 
 
@@ -40,7 +43,7 @@ public class ProfileController {
     
     @PostMapping
     public APIResponse<Void> createProfile(@RequestBody ProfileRequest request) {
-        profileService.createProfile(request);
+        profileService.createProfile(request, SecurityContextHolder.getContext().getAuthentication().getName());
         return APIResponse.response(null);
     }
     

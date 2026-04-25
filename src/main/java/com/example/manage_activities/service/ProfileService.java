@@ -3,6 +3,9 @@ package com.example.manage_activities.service;
 import com.example.manage_activities.dto.request.ProfileRequest;
 import com.example.manage_activities.dto.response.ProfileResponse;
 import com.example.manage_activities.repository.ProfileRepository;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.example.manage_activities.entity.Profile;
@@ -40,8 +43,9 @@ public class ProfileService {
     }
 
 
-    public void createProfile(ProfileRequest request) {
-        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+    @Transactional
+    public void createProfile(ProfileRequest request, String userId) {
+
         log.info("Creating profile for user: {}", userId);
 
         // Check if profile already exists for this user

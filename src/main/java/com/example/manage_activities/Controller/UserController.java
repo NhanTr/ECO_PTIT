@@ -17,6 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import com.opencsv.CSVWriter;
+import org.springframework.web.multipart.MultipartFile;
 
 
 import java.io.IOException;
@@ -62,6 +63,14 @@ public class UserController {
         return APIResponse.<List<UserResponse>>builder()
                 .result(users)
                 .build();
+    }
+
+    @PostMapping("/import/csv")
+    @PreAuthorize("hasRole('ADMIN')")
+    public APIResponse<Void> importUsersFromCSV(@RequestParam("csv_data") MultipartFile file) {
+        log.info("Import users from CSV file: {}", file.getOriginalFilename());
+        userService.importUsersFromCSV(file);
+        return APIResponse.response(null);
     }
     
     

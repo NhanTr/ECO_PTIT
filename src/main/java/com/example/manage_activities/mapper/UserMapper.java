@@ -26,4 +26,8 @@ public interface UserMapper {
     @Mapping(target = "passwordHash", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     void updateEntity(@MappingTarget User user, UserUpdateRequest request);
+
+    
 }
+
+
