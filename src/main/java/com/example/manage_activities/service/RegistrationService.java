@@ -144,6 +144,8 @@ public class RegistrationService {
         }
 
         registration.setStatus(RegistrationStatus.REJECTED);
+        registration.setApprovedBy(null);
+        registration.setApprovedAt(null);
         registrationRepository.save(registration);
 
         notificationService.sendParticipationRejectedNotification(

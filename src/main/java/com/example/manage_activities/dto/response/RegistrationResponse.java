@@ -15,10 +15,13 @@ import java.time.LocalDateTime;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class RegistrationResponse {
-    
+
     String id;
     String activityId;
     String studentId;
+    String approvedBy;
     String status;
+    LocalDateTime approvedAt;
+    LocalDateTime cancelledAt;
     LocalDateTime createdAt;
 }

@@ -12,7 +12,10 @@ public interface RegistrationMapper {
     
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "studentId", ignore = true)
+    @Mapping(target = "approvedBy", ignore = true)
     @Mapping(target = "status", ignore = true)
+    @Mapping(target = "approvedAt", ignore = true)
+    @Mapping(target = "cancelledAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     Registration toEntity(RegistrationRequest request);
     

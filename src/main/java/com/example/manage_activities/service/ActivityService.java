@@ -45,6 +45,7 @@ public class ActivityService {
 
         activity.setId(generateActivityId());
         activity.setOrganizerId(organizerId);
+        activity.setCurrentParticipants(0);
         activity.setStatus(ActivityStatus.DRAFT);
         activity.setCreatedAt(LocalDateTime.now());
 

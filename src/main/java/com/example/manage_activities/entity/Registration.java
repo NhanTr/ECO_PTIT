@@ -28,6 +28,11 @@ public class Registration {
     @Column(name = "student_id", length = 10)
     String studentId;
 
+    @Column(name = "approved_by", length = 10)
+    String approvedBy;
+
     RegistrationStatus status;
+    LocalDateTime approvedAt;
+    LocalDateTime cancelledAt;
     LocalDateTime createdAt;
 }

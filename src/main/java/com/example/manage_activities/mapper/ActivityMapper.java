@@ -15,6 +15,8 @@ public interface ActivityMapper {
     @Mapping(target = "organizerId", ignore = true)
     @Mapping(target = "reviewerId", ignore = true)
     @Mapping(target = "status", ignore = true)
+    @Mapping(target = "currentParticipants", ignore = true)
+    @Mapping(target = "cancelReason", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     Activity toEntity(ActivityCreateRequest request);
     

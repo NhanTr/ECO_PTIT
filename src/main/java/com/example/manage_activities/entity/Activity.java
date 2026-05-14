@@ -11,8 +11,6 @@ import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
 import java.math.BigDecimal;
 
-
-
 @Entity
 @Table(name = "activities")
 @Data
@@ -40,19 +38,28 @@ public class Activity {
     String location;
     LocalDateTime startTime;
     LocalDateTime endTime;
-    
+    LocalDateTime registrationDeadline;
+
     @Column(precision = 15, scale = 2)
     BigDecimal budget;
-    
+
     String sponsor;
     String targetAudience;
-    
+
     @Column(columnDefinition = "TEXT")
     String purpose;
-    
+
     Integer trainingPoints;
+    Integer maxParticipants;
+
+    @Builder.Default
+    Integer currentParticipants = 0;
+
     ActivityStatus status;
-    
+
+    @Column(columnDefinition = "TEXT")
+    String cancelReason;
+
     @Column(nullable = false, updatable = false)
     LocalDateTime createdAt;
 }
