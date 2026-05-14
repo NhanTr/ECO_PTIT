@@ -100,6 +100,19 @@ public class NotificationService {
 		}
 	}
 
+	@Transactional
+	public NotificationResponse markNotificationReadStatus(String notificationId, boolean isRead) {
+		String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+		Notification notification = notificationRepository.findById(notificationId)
+				.orElseThrow(() -> new AppException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+		if (!userId.equals(notification.getReceiverId())) {
+			throw new AppException(ErrorCode.UNAUTHORIZED);
+		}
+
+		notification.setIsRead(isRead);
+		return toResponse(notificationRepository.save(notification));
+	}
 
 	@Transactional
 	public void sendParticipationRejectedNotification(String studentId, String activityId, String reason) {

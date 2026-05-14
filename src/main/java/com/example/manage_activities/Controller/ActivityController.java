@@ -11,11 +11,13 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -56,6 +58,24 @@ public class ActivityController {
                 .build();
     }
     
+    /**
+     * Get activities visible to students.
+     * GET /api/v1/activities/available?keyword=&location=&fromTime=&toTime=
+     */
+    @GetMapping("/available")
+    public APIResponse<Page<ActivityResponse>> getAvailableActivities(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toTime,
+            Pageable pageable) {
+        log.info("Get available activities request received");
+        Page<ActivityResponse> activities = activityService.getAvailableActivities(
+                keyword, location, fromTime, toTime, pageable);
+        return APIResponse.<Page<ActivityResponse>>builder()
+                .result(activities)
+                .build();
+    }
     /**
      * Get activity by ID
      * GET /api/v1/activities/{id}

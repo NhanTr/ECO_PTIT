@@ -2,9 +2,15 @@ package com.example.manage_activities.repository;
 
 import com.example.manage_activities.entity.Activity;
 import com.example.manage_activities.enums.ActivityStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -12,8 +18,21 @@ public interface ActivityRepository extends JpaRepository<Activity, String> {
     List<Activity> findByOrganizerId(String organizerId);
     List<Activity> findByStatus(ActivityStatus status);
 
+    @Query("""
+            SELECT a FROM Activity a
+            WHERE a.status IN :statuses
+              AND (:keyword IS NULL OR LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+              AND (:location IS NULL OR LOWER(a.location) LIKE LOWER(CONCAT('%', :location, '%')))
+              AND (:fromTime IS NULL OR a.startTime >= :fromTime)
+              AND (:toTime IS NULL OR a.startTime <= :toTime)
+            """)
+    Page<Activity> searchAvailableActivities(
+            @Param("statuses") Collection<ActivityStatus> statuses,
+            @Param("keyword") String keyword,
+            @Param("location") String location,
+            @Param("fromTime") LocalDateTime fromTime,
+            @Param("toTime") LocalDateTime toTime,
+            Pageable pageable);
+
     boolean existsById(String id);
-
-    
-
 }

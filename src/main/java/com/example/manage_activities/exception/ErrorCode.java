@@ -27,7 +27,12 @@ public enum ErrorCode {
     REGISTRATION_NOT_FOUND(1021, "Registration not found", HttpStatus.NOT_FOUND),
     REGISTRATION_ALREADY_APPROVED(1015, "Registration has already been approved", HttpStatus.BAD_REQUEST),
     REGISTRATION_CANCELLED(1016, "Registration was cancelled", HttpStatus.BAD_REQUEST),
-    REGISTRATION_ALREADY_REJECTED(1017, "Registration has already been rejected", HttpStatus.BAD_REQUEST);
+    REGISTRATION_ALREADY_REJECTED(1017, "Registration has already been rejected", HttpStatus.BAD_REQUEST),
+    ACTIVITY_NOT_AVAILABLE_FOR_REGISTRATION(1022, "Activity is not available for registration", HttpStatus.BAD_REQUEST),
+    REGISTRATION_DEADLINE_EXPIRED(1023, "Registration deadline has expired", HttpStatus.BAD_REQUEST),
+    ACTIVITY_FULL(1024, "Activity has reached maximum participants", HttpStatus.BAD_REQUEST),
+    REGISTRATION_CANNOT_CANCEL(1025, "Registration cannot be cancelled", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_NOT_FOUND(1026, "Notification not found", HttpStatus.NOT_FOUND);
 
 
     private int code;

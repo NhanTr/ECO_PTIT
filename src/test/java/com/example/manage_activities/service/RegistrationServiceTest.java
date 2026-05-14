@@ -5,6 +5,8 @@ import com.example.manage_activities.enums.RegistrationStatus;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.RegistrationMapper;
+import com.example.manage_activities.repository.ActivityRepository;
+import com.example.manage_activities.repository.AttendanceRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
 import org.junit.jupiter.api.Test;
 
@@ -22,8 +24,12 @@ class RegistrationServiceTest {
     private final RegistrationRepository registrationRepository = mock(RegistrationRepository.class);
     private final RegistrationMapper registrationMapper = mock(RegistrationMapper.class);
     private final NotificationService notificationService = mock(NotificationService.class);
+    private final ActivityRepository activityRepository = mock(ActivityRepository.class);
+    private final AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
+    private final SystemLogService systemLogService = mock(SystemLogService.class);
     private final RegistrationService registrationService =
-            new RegistrationService(registrationRepository, registrationMapper, notificationService);
+            new RegistrationService(registrationRepository, registrationMapper, notificationService,
+                    activityRepository, attendanceRepository, systemLogService);
 
     @Test
     void rejectRegistration_shouldRejectPendingStudentAndSendNotification() {

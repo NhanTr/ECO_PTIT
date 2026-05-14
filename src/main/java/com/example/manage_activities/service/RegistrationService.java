@@ -1,12 +1,18 @@
 package com.example.manage_activities.service;
 
-
 import com.example.manage_activities.dto.response.RegistrationResponse;
+import com.example.manage_activities.dto.response.StudentActivityHistoryResponse;
+import com.example.manage_activities.dto.response.StudentPointsResponse;
+import com.example.manage_activities.entity.Activity;
+import com.example.manage_activities.entity.Attendance;
 import com.example.manage_activities.entity.Registration;
+import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.enums.RegistrationStatus;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.RegistrationMapper;
+import com.example.manage_activities.repository.ActivityRepository;
+import com.example.manage_activities.repository.AttendanceRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -14,10 +20,14 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,65 +35,99 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class RegistrationService {
-    
+
+    private static final List<RegistrationStatus> ACTIVE_REGISTRATION_STATUSES =
+            List.of(RegistrationStatus.PENDING, RegistrationStatus.APPROVED);
+
     RegistrationRepository registrationRepository;
     RegistrationMapper registrationMapper;
     NotificationService notificationService;
+    ActivityRepository activityRepository;
+    AttendanceRepository attendanceRepository;
+    SystemLogService systemLogService;
 
     /**
      * Register user for activity
      */
-    public void registerActivity(String activityId) {
+    @Transactional
+    public RegistrationResponse registerActivity(String activityId) {
         log.info("Registering user for activity: {}", activityId);
-        
+
         String userId = SecurityContextHolder.getContext().getAuthentication().getName();
-        
-        // Check if already registered
-        boolean alreadyRegistered = registrationRepository.existsByActivityIdAndStudentId(activityId, userId);
-        
-        if (alreadyRegistered) {
-            throw new AppException(ErrorCode.EXIST_REGISTRATIONS);
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new AppException(ErrorCode.ACTIVITY_NOT_FOUND));
+
+        validateRegistrationRule(activity);
+
+        Optional<Registration> existingRegistration =
+                registrationRepository.findByActivityIdAndStudentId(activityId, userId);
+        Registration registration;
+
+        if (existingRegistration.isPresent()) {
+            registration = existingRegistration.get();
+            if (!RegistrationStatus.CANCELLED.equals(registration.getStatus())) {
+                throw new AppException(ErrorCode.EXIST_REGISTRATIONS);
+            }
+            registration.setStatus(RegistrationStatus.PENDING);
+            registration.setApprovedBy(null);
+            registration.setApprovedAt(null);
+            registration.setCancelledAt(null);
+            registration.setCreatedAt(LocalDateTime.now());
+        } else {
+            registration = new Registration();
+            registration.setId(generateRegistrationId());
+            registration.setActivityId(activityId);
+            registration.setStudentId(userId);
+            registration.setStatus(RegistrationStatus.PENDING);
+            registration.setCreatedAt(LocalDateTime.now());
         }
-        
-        Registration registration = new Registration();
-        registration.setId(generateRegistrationId());
-        registration.setActivityId(activityId);
-        registration.setStudentId(userId);
-        registration.setStatus(RegistrationStatus.PENDING);
-        registration.setCreatedAt(LocalDateTime.now());
-        
-        registrationRepository.save(registration);
+
+        Registration savedRegistration = registrationRepository.save(registration);
+        refreshActivityParticipantCount(activity);
+        return registrationMapper.toDTO(savedRegistration);
     }
-    
+
     /**
      * Unregister user from activity
      */
+    @Transactional
     public void unregisterActivity(String activityId) {
         log.info("Unregistering user from activity: {}", activityId);
-        
+
         String studentId = SecurityContextHolder.getContext().getAuthentication().getName();
-        log.debug("Searching registration - activityId: {}, studentId: {}", activityId, studentId);
-        
-        String registrationId = registrationRepository.findIdByActivityIdAndStudentId(activityId, studentId);
-        
-        if (registrationId == null) {
-            log.warn("Registration not found for activityId: {}, studentId: {}", activityId, studentId);
-            throw new AppException(ErrorCode.NO_REGISTRATIONS);
-        }
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new AppException(ErrorCode.ACTIVITY_NOT_FOUND));
 
-        registrationRepository.deleteById(registrationId);
+        Registration registration = registrationRepository.findByActivityIdAndStudentId(activityId, studentId)
+                .orElseThrow(() -> new AppException(ErrorCode.NO_REGISTRATIONS));
 
-        log.info("User unregistered successfully from activity: {}", activityId);
+        validateCancellationRule(activity, registration);
+
+        RegistrationStatus oldStatus = registration.getStatus();
+        registration.setStatus(RegistrationStatus.CANCELLED);
+        registration.setCancelledAt(LocalDateTime.now());
+        registrationRepository.save(registration);
+        refreshActivityParticipantCount(activity);
+
+        systemLogService.logAction(
+                studentId,
+                "CANCEL_REGISTRATION",
+                "registrations",
+                "registrationId=" + registration.getId() + ", status=" + oldStatus.getValue(),
+                "registrationId=" + registration.getId() + ", status=" + RegistrationStatus.CANCELLED.getValue()
+        );
+
+        log.info("User cancelled registration successfully from activity: {}", activityId);
     }
-    
+
     /**
      * Get user's registrations
      */
     public List<RegistrationResponse> getUserRegistrations() {
         log.info("Getting user registrations");
-        
+
         String studentId = SecurityContextHolder.getContext().getAuthentication().getName();
-        
+
         List<Registration> registrations = registrationRepository.findByStudentId(studentId);
 
         if (registrations.isEmpty()) {
@@ -97,28 +141,47 @@ public class RegistrationService {
                 .map(registrationMapper::toDTO)
                 .collect(Collectors.toList());
     }
-    
+
+    public List<StudentActivityHistoryResponse> getMyActivityHistory(Integer year, Integer semester) {
+        validateSemester(semester);
+        String studentId = SecurityContextHolder.getContext().getAuthentication().getName();
+        List<Registration> registrations = registrationRepository.findByStudentIdOrderByCreatedAtDesc(studentId);
+        return buildHistoryResponses(registrations, year, semester);
+    }
+
+    public StudentPointsResponse getMyPoints(Integer year, Integer semester) {
+        List<StudentActivityHistoryResponse> activities = getMyActivityHistory(year, semester);
+        int totalPoints = activities.stream()
+                .map(StudentActivityHistoryResponse::getEarnedPoints)
+                .filter(points -> points != null)
+                .mapToInt(Integer::intValue)
+                .sum();
+
+        return StudentPointsResponse.builder()
+                .totalPoints(totalPoints)
+                .activities(activities)
+                .build();
+    }
+
     /**
      * Get activity registrations
      */
     public List<RegistrationResponse> getActivityRegistrations(String activityId) {
         log.info("Getting registrations for activity: {}", activityId);
-        
+
         return registrationRepository.findByActivityId(activityId)
                 .stream()
                 .map(registrationMapper::toDTO)
                 .collect(Collectors.toList());
     }
-    
+
     /**
      * Get registration count for activity
      */
     public Long getActivityRegistrationCount(String activityId) {
         log.info("Getting registration count for activity: {}", activityId);
-        return registrationRepository.countByActivityId(activityId);
+        return registrationRepository.countByActivityIdAndStatusIn(activityId, ACTIVE_REGISTRATION_STATUSES);
     }
-
-
 
     /**
      * Reject one registered student in an activity and notify the student.
@@ -147,6 +210,7 @@ public class RegistrationService {
         registration.setApprovedBy(null);
         registration.setApprovedAt(null);
         registrationRepository.save(registration);
+        activityRepository.findById(activityId).ifPresent(this::refreshActivityParticipantCount);
 
         notificationService.sendParticipationRejectedNotification(
                 registration.getStudentId(),
@@ -157,6 +221,100 @@ public class RegistrationService {
         log.info("Registration rejected and notification sent for activityId: {}, studentId: {}", activityId, studentId);
     }
 
+    private void validateRegistrationRule(Activity activity) {
+        if (!ActivityStatus.APPROVED.equals(activity.getStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_NOT_AVAILABLE_FOR_REGISTRATION);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (activity.getRegistrationDeadline() != null && now.isAfter(activity.getRegistrationDeadline())) {
+            throw new AppException(ErrorCode.REGISTRATION_DEADLINE_EXPIRED);
+        }
+
+        Long activeCount = registrationRepository.countByActivityIdAndStatusIn(
+                activity.getId(), ACTIVE_REGISTRATION_STATUSES);
+        if (activity.getMaxParticipants() != null && activeCount >= activity.getMaxParticipants()) {
+            throw new AppException(ErrorCode.ACTIVITY_FULL);
+        }
+    }
+
+    private void validateCancellationRule(Activity activity, Registration registration) {
+        if (!ACTIVE_REGISTRATION_STATUSES.contains(registration.getStatus())) {
+            throw new AppException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
+        }
+
+        if (activity.getStartTime() != null) {
+            LocalDateTime cancellationDeadline = activity.getStartTime().minusHours(24);
+            if (!LocalDateTime.now().isBefore(cancellationDeadline)) {
+                throw new AppException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
+            }
+        }
+    }
+
+    private void refreshActivityParticipantCount(Activity activity) {
+        Long activeCount = registrationRepository.countByActivityIdAndStatusIn(
+                activity.getId(), ACTIVE_REGISTRATION_STATUSES);
+        activity.setCurrentParticipants(activeCount.intValue());
+        activityRepository.save(activity);
+    }
+
+    private List<StudentActivityHistoryResponse> buildHistoryResponses(
+            List<Registration> registrations,
+            Integer year,
+            Integer semester) {
+        List<String> registrationIds = registrations.stream()
+                .map(Registration::getId)
+                .toList();
+        Map<String, Attendance> attendanceByRegistrationId = attendanceRepository.findByRegistrationIdIn(registrationIds)
+                .stream()
+                .collect(Collectors.toMap(Attendance::getRegistrationId, Function.identity(), (first, second) -> first));
+
+        return registrations.stream()
+                .map(registration -> toHistoryResponse(registration, attendanceByRegistrationId.get(registration.getId())))
+                .filter(history -> matchesPeriod(history.getStartTime(), year, semester))
+                .toList();
+    }
+
+    private StudentActivityHistoryResponse toHistoryResponse(Registration registration, Attendance attendance) {
+        Activity activity = activityRepository.findById(registration.getActivityId()).orElse(null);
+        return StudentActivityHistoryResponse.builder()
+                .registrationId(registration.getId())
+                .activityId(registration.getActivityId())
+                .activityTitle(activity == null ? null : activity.getTitle())
+                .location(activity == null ? null : activity.getLocation())
+                .startTime(activity == null ? null : activity.getStartTime())
+                .endTime(activity == null ? null : activity.getEndTime())
+                .activityStatus(activity == null || activity.getStatus() == null ? null : activity.getStatus().getValue())
+                .registrationStatus(registration.getStatus() == null ? null : registration.getStatus().getValue())
+                .isPresent(attendance == null ? null : attendance.getIsPresent())
+                .earnedPoints(attendance == null ? 0 : attendance.getEarnedPoints())
+                .registeredAt(registration.getCreatedAt())
+                .build();
+    }
+
+    private boolean matchesPeriod(LocalDateTime startTime, Integer year, Integer semester) {
+        if (year == null && semester == null) {
+            return true;
+        }
+        if (startTime == null) {
+            return false;
+        }
+        if (year != null && startTime.getYear() != year) {
+            return false;
+        }
+        if (semester == null) {
+            return true;
+        }
+
+        int month = startTime.getMonthValue();
+        return semester == 1 ? month <= 6 : month >= 7;
+    }
+
+    private void validateSemester(Integer semester) {
+        if (semester != null && semester != 1 && semester != 2) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+    }
 
     /**
      * Generate a unique ID for the registration

@@ -57,6 +57,33 @@ public class ActivityService {
     }
     
     /**
+     * Search activities visible to students.
+     */
+    public Page<ActivityResponse> getAvailableActivities(
+            String keyword,
+            String location,
+            LocalDateTime fromTime,
+            LocalDateTime toTime,
+            Pageable pageable) {
+        log.info("Getting available activities for students");
+
+        return activityRepository.searchAvailableActivities(
+                        List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING),
+                        normalizeSearchValue(keyword),
+                        normalizeSearchValue(location),
+                        fromTime,
+                        toTime,
+                        pageable)
+                .map(activityMapper::toDTO);
+    }
+
+    private String normalizeSearchValue(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+    /**
      * Get activity by ID
      */
     public ActivityResponse getActivityById(String id) {
