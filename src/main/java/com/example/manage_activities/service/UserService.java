@@ -31,6 +31,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final SystemLogService systemLogService;
     
     /**
      * Create a new user
@@ -57,6 +58,8 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         
         User savedUser = userRepository.save(user);
+        systemLogService.logAction(getCurrentUserId(), "CREATE_USER", "users", null,
+                "userId=" + savedUser.getId() + ", roleId=" + savedUser.getRoleId());
         log.info("User created successfully with ID: {}", savedUser.getId());
         
         return userMapper.toDTO(savedUser);
@@ -129,9 +132,41 @@ public class UserService {
         
         userMapper.updateEntity(user, request);
         User updatedUser = userRepository.save(user);
+        systemLogService.logAction(getCurrentUserId(), "UPDATE_USER", "users",
+                "userId=" + id,
+                "email=" + updatedUser.getEmail() + ", status=" + updatedUser.getStatus() + ", roleId=" + updatedUser.getRoleId());
         log.info("User updated successfully with ID: {}", updatedUser.getId());
         
         return userMapper.toDTO(updatedUser);
+    }
+
+    @Transactional
+    public UserResponse assignPrimaryRole(String userId, Integer roleId) {
+        validateRoleId(roleId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Integer oldRoleId = user.getRoleId();
+
+        user.setRoleId(roleId);
+        User savedUser = userRepository.save(user);
+        systemLogService.logAction(getCurrentUserId(), "ASSIGN_PRIMARY_ROLE", "users",
+                "userId=" + userId + ", roleId=" + oldRoleId,
+                "userId=" + userId + ", roleId=" + roleId);
+        return userMapper.toDTO(savedUser);
+    }
+
+    @Transactional
+    public UserResponse revokePrimaryRole(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        Integer oldRoleId = user.getRoleId();
+
+        user.setRoleId(4);
+        User savedUser = userRepository.save(user);
+        systemLogService.logAction(getCurrentUserId(), "REVOKE_PRIMARY_ROLE", "users",
+                "userId=" + userId + ", roleId=" + oldRoleId,
+                "userId=" + userId + ", roleId=4");
+        return userMapper.toDTO(savedUser);
     }
     
     /**
@@ -146,6 +181,7 @@ public class UserService {
         }
         
         userRepository.deleteById(id);
+        systemLogService.logAction(getCurrentUserId(), "DELETE_USER", "users", "userId=" + id, null);
         log.info("User deleted successfully with ID: {}", id);
     }
     
@@ -186,6 +222,18 @@ public class UserService {
         // Update password
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
+        systemLogService.logAction(userId, "CHANGE_PASSWORD", "users", "userId=" + userId, "passwordChanged=true");
         log.info("Password changed successfully for user: {}", username);
+    }
+
+    private void validateRoleId(Integer roleId) {
+        if (roleId == null || roleId < 1 || roleId > 4) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+    }
+
+    private String getCurrentUserId() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication == null ? "system" : authentication.getName();
     }
 }

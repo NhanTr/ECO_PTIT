@@ -46,6 +46,7 @@ public class RegistrationService {
     ActivityRepository activityRepository;
     AttendanceRepository attendanceRepository;
     SystemLogService systemLogService;
+    SystemConfigService systemConfigService;
 
     /**
      * Register user for activity
@@ -85,6 +86,9 @@ public class RegistrationService {
 
         Registration savedRegistration = registrationRepository.save(registration);
         refreshActivityParticipantCount(activity);
+        systemLogService.logAction(userId, "REGISTER_ACTIVITY", "registrations",
+                null,
+                "registrationId=" + savedRegistration.getId() + ", activityId=" + activityId + ", status=" + savedRegistration.getStatus().getValue());
         return registrationMapper.toDTO(savedRegistration);
     }
 
@@ -204,6 +208,9 @@ public class RegistrationService {
         registration.setApprovedAt(LocalDateTime.now());
         Registration savedRegistration = registrationRepository.save(registration);
         refreshActivityParticipantCount(activity);
+        systemLogService.logAction(getCurrentUserId(), "APPROVE_REGISTRATION", "registrations",
+                "registrationId=" + registration.getId() + ", status=Pending",
+                "registrationId=" + registration.getId() + ", status=Approved");
         return registrationMapper.toDTO(savedRegistration);
     }
     /**
@@ -251,6 +258,9 @@ public class RegistrationService {
                 registration.getActivityId(),
                 reason
         );
+        systemLogService.logAction(getCurrentUserId(), "REJECT_REGISTRATION", "registrations",
+                "registrationId=" + registration.getId() + ", status=Pending",
+                "registrationId=" + registration.getId() + ", status=Rejected, reason=" + reason);
 
         log.info("Registration rejected and notification sent for activityId: {}, studentId: {}", activityId, studentId);
     }
@@ -278,7 +288,9 @@ public class RegistrationService {
         }
 
         if (activity.getStartTime() != null) {
-            LocalDateTime cancellationDeadline = activity.getStartTime().minusHours(24);
+            int cancelDeadlineHours = systemConfigService.getIntValue(
+                    SystemConfigService.REGISTRATION_CANCEL_DEADLINE_HOURS, 24);
+            LocalDateTime cancellationDeadline = activity.getStartTime().minusHours(cancelDeadlineHours);
             if (!LocalDateTime.now().isBefore(cancellationDeadline)) {
                 throw new AppException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
             }

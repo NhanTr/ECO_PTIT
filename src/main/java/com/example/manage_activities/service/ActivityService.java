@@ -63,6 +63,8 @@ public class ActivityService {
     ActivityFileRepository activityFileRepository;
     AttendanceRepository attendanceRepository;
     NotificationService notificationService;
+    SystemConfigService systemConfigService;
+    SystemLogService systemLogService;
 
     /**
      * Create a new activity
@@ -80,8 +82,13 @@ public class ActivityService {
         activity.setCurrentParticipants(0);
         activity.setStatus(ActivityStatus.DRAFT);
         activity.setCreatedAt(LocalDateTime.now());
+        if (activity.getTrainingPoints() == null) {
+            activity.setTrainingPoints(systemConfigService.getIntValue(SystemConfigService.DEFAULT_TRAINING_POINTS, 5));
+        }
 
         Activity savedActivity = activityRepository.save(activity);
+        systemLogService.logAction(organizerId, "CREATE_ACTIVITY", "activities", null,
+                "activityId=" + savedActivity.getId() + ", status=" + savedActivity.getStatus().getValue());
         log.info("Activity created successfully with ID: {}", savedActivity.getId());
         return activityMapper.toDTO(savedActivity);
     }
@@ -134,14 +141,22 @@ public class ActivityService {
         }
 
         applyUpdate(activity, request);
-        return activityMapper.toDTO(activityRepository.save(activity));
+        Activity savedActivity = activityRepository.save(activity);
+        systemLogService.logAction(getCurrentUserId(), "UPDATE_ACTIVITY", "activities",
+                "activityId=" + id,
+                "activityId=" + id + ", status=" + savedActivity.getStatus().getValue());
+        return activityMapper.toDTO(savedActivity);
     }
 
     @Transactional
     public ActivityResponse managerUpdateActivity(String id, ActivityUpdateRequest request) {
         Activity activity = getActivityEntity(id);
         applyUpdate(activity, request);
-        return activityMapper.toDTO(activityRepository.save(activity));
+        Activity savedActivity = activityRepository.save(activity);
+        systemLogService.logAction(getCurrentUserId(), "MANAGER_UPDATE_ACTIVITY", "activities",
+                "activityId=" + id,
+                "activityId=" + id + ", status=" + savedActivity.getStatus().getValue());
+        return activityMapper.toDTO(savedActivity);
     }
 
     @Transactional
@@ -154,6 +169,8 @@ public class ActivityService {
         }
 
         activityRepository.delete(activity);
+        systemLogService.logAction(getCurrentUserId(), "DELETE_ACTIVITY", "activities",
+                "activityId=" + id + ", status=" + activity.getStatus().getValue(), null);
     }
 
     @Transactional
@@ -166,7 +183,11 @@ public class ActivityService {
         }
 
         activity.setStatus(ActivityStatus.PENDING);
-        return activityMapper.toDTO(activityRepository.save(activity));
+        Activity savedActivity = activityRepository.save(activity);
+        systemLogService.logAction(getCurrentUserId(), "SUBMIT_ACTIVITY", "activities",
+                "activityId=" + id + ", status=Draft",
+                "activityId=" + id + ", status=Pending");
+        return activityMapper.toDTO(savedActivity);
     }
 
     @Transactional
@@ -180,7 +201,11 @@ public class ActivityService {
 
         activity.setCancelReason(reason);
         activity.setStatus(ActivityStatus.REVIEWING);
-        return activityMapper.toDTO(activityRepository.save(activity));
+        Activity savedActivity = activityRepository.save(activity);
+        systemLogService.logAction(getCurrentUserId(), "REQUEST_CANCEL_ACTIVITY", "activities",
+                "activityId=" + id + ", status=Approved",
+                "activityId=" + id + ", status=Reviewing, reason=" + reason);
+        return activityMapper.toDTO(savedActivity);
     }
 
     @Transactional
@@ -206,7 +231,11 @@ public class ActivityService {
                 .reviewNote(request.getReviewNote())
                 .build();
 
-        return toActivityFileResponse(activityFileRepository.save(report));
+        ActivityFile savedReport = activityFileRepository.save(report);
+        systemLogService.logAction(getCurrentUserId(), "SUBMIT_ACTIVITY_REPORT", "activity_files",
+                null,
+                "reportId=" + savedReport.getId() + ", activityId=" + activityId);
+        return toActivityFileResponse(savedReport);
     }
 
     public ClubStatisticsResponse getMyClubStatistics(Integer year, Integer semester) {
@@ -273,6 +302,9 @@ public class ActivityService {
         notifyOrganizer(savedActivity,
                 "Hoat dong da duoc duyet",
                 "Hoat dong \"" + savedActivity.getTitle() + "\" da duoc duyet.");
+        systemLogService.logAction(reviewerId, "APPROVE_ACTIVITY", "activities",
+                "activityId=" + id,
+                "activityId=" + id + ", status=Approved");
         return activityMapper.toDTO(savedActivity);
     }
 
@@ -297,6 +329,9 @@ public class ActivityService {
         notifyOrganizer(savedActivity,
                 "Hoat dong bi tu choi",
                 "Hoat dong \"" + savedActivity.getTitle() + "\" bi tu choi. Ly do: " + reason);
+        systemLogService.logAction(reviewerId, "REJECT_ACTIVITY", "activities",
+                "activityId=" + id,
+                "activityId=" + id + ", status=Rejected, reason=" + reason);
         return activityMapper.toDTO(savedActivity);
     }
 
@@ -313,6 +348,9 @@ public class ActivityService {
         notifyOrganizer(savedActivity,
                 "Yeu cau huy hoat dong da duoc duyet",
                 "Yeu cau huy hoat dong \"" + savedActivity.getTitle() + "\" da duoc chap nhan.");
+        systemLogService.logAction(getCurrentUserId(), "APPROVE_CANCEL_ACTIVITY", "activities",
+                "activityId=" + id + ", status=Reviewing",
+                "activityId=" + id + ", status=Cancelled");
         return activityMapper.toDTO(savedActivity);
     }
 
@@ -329,6 +367,9 @@ public class ActivityService {
         notifyOrganizer(savedActivity,
                 "Yeu cau huy hoat dong bi tu choi",
                 "Yeu cau huy hoat dong \"" + savedActivity.getTitle() + "\" bi tu choi. Ly do: " + reason);
+        systemLogService.logAction(getCurrentUserId(), "REJECT_CANCEL_ACTIVITY", "activities",
+                "activityId=" + id + ", status=Reviewing",
+                "activityId=" + id + ", status=Approved, reason=" + reason);
         return activityMapper.toDTO(savedActivity);
     }
 
@@ -405,6 +446,9 @@ public class ActivityService {
         notifyOrganizer(activity,
                 "Bao cao sau hoat dong da duoc duyet",
                 "Bao cao cua hoat dong \"" + activity.getTitle() + "\" da duoc duyet. Diem hoat dong da duoc xac nhan.");
+        systemLogService.logAction(getCurrentUserId(), "APPROVE_ACTIVITY_REPORT", "activity_files",
+                "reportId=" + reportId + ", status=Pending",
+                "reportId=" + reportId + ", status=Approved");
         return toActivityFileResponse(savedReport);
     }
 
@@ -422,6 +466,9 @@ public class ActivityService {
         notifyOrganizer(activity,
                 "Bao cao sau hoat dong bi tu choi",
                 "Bao cao cua hoat dong \"" + activity.getTitle() + "\" bi tu choi. Ly do: " + reason);
+        systemLogService.logAction(getCurrentUserId(), "REJECT_ACTIVITY_REPORT", "activity_files",
+                "reportId=" + reportId + ", status=Pending",
+                "reportId=" + reportId + ", status=Rejected, reason=" + reason);
         return toActivityFileResponse(savedReport);
     }
 

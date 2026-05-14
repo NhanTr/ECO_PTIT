@@ -33,9 +33,10 @@ class RegistrationServiceTest {
     private final ActivityRepository activityRepository = mock(ActivityRepository.class);
     private final AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
     private final SystemLogService systemLogService = mock(SystemLogService.class);
+    private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
     private final RegistrationService registrationService =
             new RegistrationService(registrationRepository, registrationMapper, notificationService,
-                    activityRepository, attendanceRepository, systemLogService);
+                    activityRepository, attendanceRepository, systemLogService, systemConfigService);
 
     @AfterEach
     void cleanupSecurityContext() {

@@ -31,6 +31,7 @@ public class AttendanceService {
     AttendanceRepository attendanceRepository;
     RegistrationRepository registrationRepository;
     ActivityService activityService;
+    SystemLogService systemLogService;
 
     @Transactional
     public AttendanceResponse checkIn(AttendanceRequest request) {
@@ -58,7 +59,14 @@ public class AttendanceService {
             attendance.setEarnedPoints(0);
         }
 
-        return toResponse(attendanceRepository.save(attendance));
+        Attendance savedAttendance = attendanceRepository.save(attendance);
+        systemLogService.logAction(
+                getCurrentUserId(),
+                "CHECK_IN_ATTENDANCE",
+                "attendance",
+                "registrationId=" + registration.getId(),
+                "attendanceId=" + savedAttendance.getId() + ", isPresent=" + savedAttendance.getIsPresent());
+        return toResponse(savedAttendance);
     }
 
     @Transactional
@@ -79,7 +87,14 @@ public class AttendanceService {
         }
 
         attendance.setEarnedPoints(request.getEarnedPoints() == null ? activity.getTrainingPoints() : request.getEarnedPoints());
-        return toResponse(attendanceRepository.save(attendance));
+        Attendance savedAttendance = attendanceRepository.save(attendance);
+        systemLogService.logAction(
+                getCurrentUserId(),
+                "AWARD_POINTS",
+                "attendance",
+                "attendanceId=" + attendance.getId(),
+                "attendanceId=" + attendance.getId() + ", earnedPoints=" + savedAttendance.getEarnedPoints());
+        return toResponse(savedAttendance);
     }
 
     private AttendanceResponse toResponse(Attendance attendance) {
@@ -98,5 +113,9 @@ public class AttendanceService {
             id = UUID.randomUUID().toString().substring(0, 10);
         }
         return id;
+    }
+
+    private String getCurrentUserId() {
+        return org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
     }
 }
