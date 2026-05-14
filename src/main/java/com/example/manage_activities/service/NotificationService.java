@@ -46,6 +46,27 @@ public class NotificationService {
 	}
 
 	@Transactional
+	public void sendNotificationToUser(String receiverId, String title, String content, String type) {
+		if (receiverId == null || receiverId.isBlank()) {
+			log.info("Skip notification because receiverId is blank");
+			return;
+		}
+
+		Notification notification = Notification.builder()
+				.id(generateNotificationId())
+				.receiverId(receiverId)
+				.title(title)
+				.content(content)
+				.type(type)
+				.isRead(false)
+				.createdAt(LocalDateTime.now())
+				.build();
+
+		notificationRepository.save(notification);
+		log.info("Sent notification to user: {}", receiverId);
+	}
+
+	@Transactional
 	public int sendNotifications(NotificationCreateRequest request) {
 		validateSystemNotificationPermission(request);
 

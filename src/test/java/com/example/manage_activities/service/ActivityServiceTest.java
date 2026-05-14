@@ -8,6 +8,7 @@ import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.ActivityMapper;
 import com.example.manage_activities.repository.ActivityFileRepository;
 import com.example.manage_activities.repository.ActivityRepository;
+import com.example.manage_activities.repository.AttendanceRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -29,8 +30,11 @@ class ActivityServiceTest {
     private final ActivityMapper activityMapper = mock(ActivityMapper.class);
     private final RegistrationRepository registrationRepository = mock(RegistrationRepository.class);
     private final ActivityFileRepository activityFileRepository = mock(ActivityFileRepository.class);
+    private final AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
+    private final NotificationService notificationService = mock(NotificationService.class);
     private final ActivityService activityService =
-            new ActivityService(activityRepository, activityMapper, registrationRepository, activityFileRepository);
+            new ActivityService(activityRepository, activityMapper, registrationRepository, activityFileRepository,
+                    attendanceRepository, notificationService);
 
     @AfterEach
     void cleanupSecurityContext() {

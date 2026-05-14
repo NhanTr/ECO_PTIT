@@ -39,7 +39,9 @@ public enum ErrorCode {
     ATTENDANCE_NOT_ALLOWED(1030, "Attendance is not allowed for this activity", HttpStatus.BAD_REQUEST),
     POINT_AWARD_NOT_ALLOWED(1031, "Points cannot be awarded for this activity", HttpStatus.BAD_REQUEST),
     ATTENDANCE_NOT_FOUND(1032, "Attendance not found", HttpStatus.NOT_FOUND),
-    ACTIVITY_REPORT_NOT_ALLOWED(1033, "Report cannot be submitted for this activity", HttpStatus.BAD_REQUEST);
+    ACTIVITY_REPORT_NOT_ALLOWED(1033, "Report cannot be submitted for this activity", HttpStatus.BAD_REQUEST),
+    ACTIVITY_FILE_NOT_FOUND(1034, "Activity file not found", HttpStatus.NOT_FOUND),
+    ACTIVITY_REPORT_ALREADY_REVIEWED(1035, "Report has already been reviewed", HttpStatus.BAD_REQUEST);
 
 
     private int code;

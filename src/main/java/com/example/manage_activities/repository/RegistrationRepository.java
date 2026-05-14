@@ -18,6 +18,7 @@ public interface RegistrationRepository extends JpaRepository<Registration, Stri
     Optional<Registration> findByActivityIdAndStudentId(String activityId, String studentId);
     Long countByActivityId(String activityId);
     Long countByActivityIdAndStatusIn(String activityId, Collection<RegistrationStatus> statuses);
+    List<Registration> findByActivityIdIn(Collection<String> activityIds);
     boolean existsByActivityIdAndStudentId(String activityId, String studentId);
 
     @Query("SELECT r.id FROM Registration r WHERE r.activityId = ?1 AND r.studentId = ?2")
