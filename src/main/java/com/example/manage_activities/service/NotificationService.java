@@ -41,6 +41,11 @@ public class NotificationService {
 	}
 
 	@Transactional
+	public int sendNotificationsToStudents(NotificationCreateRequest request) {
+		return sendNotifications(request);
+	}
+
+	@Transactional
 	public int sendNotifications(NotificationCreateRequest request) {
 		validateSystemNotificationPermission(request);
 

@@ -1,5 +1,6 @@
 package com.example.manage_activities.entity;
 
+import com.example.manage_activities.enums.ReportStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -26,7 +27,7 @@ public class ActivityFile {
     @Column(name = "reviewer_id", length = 10)
     String reviewerId;
 
-    String reportStatus; // Not_Submitted, Processing, Done
+    ReportStatus reportStatus;
     String fileUrl;
     String fileType; // Plan, Report, Image
 }

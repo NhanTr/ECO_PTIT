@@ -3,6 +3,7 @@ package com.example.manage_activities.service;
 import com.example.manage_activities.dto.request.ActivityCreateRequest;
 import com.example.manage_activities.dto.response.ActivityResponse;
 import com.example.manage_activities.entity.Activity;
+import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.ActivityMapper;
@@ -44,7 +45,7 @@ public class ActivityService {
 
         activity.setId(generateActivityId());
         activity.setOrganizerId(organizerId);
-        activity.setStatus("Draft");
+        activity.setStatus(ActivityStatus.DRAFT);
         activity.setCreatedAt(LocalDateTime.now());
 
 
@@ -75,12 +76,12 @@ public class ActivityService {
         Activity activity = activityRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ACTIVITY_NOT_FOUND));
 
-        if ("Approved".equalsIgnoreCase(activity.getStatus())) {
+        if (ActivityStatus.APPROVED.equals(activity.getStatus())) {
             throw new AppException(ErrorCode.ACTIVITY_ALREADY_APPROVED);
         }
 
         String reviewerId = SecurityContextHolder.getContext().getAuthentication().getName();
-        activity.setStatus("Approved");
+        activity.setStatus(ActivityStatus.APPROVED);
         activity.setReviewerId(reviewerId);
 
         Activity savedActivity = activityRepository.save(activity);
@@ -96,12 +97,12 @@ public class ActivityService {
         Activity activity = activityRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ACTIVITY_NOT_FOUND));
 
-        if ("Rejected".equalsIgnoreCase(activity.getStatus())) {
+        if (ActivityStatus.REJECTED.equals(activity.getStatus())) {
             throw new AppException(ErrorCode.ACTIVITY_ALREADY_REJECTED);
         }
 
         String reviewerId = SecurityContextHolder.getContext().getAuthentication().getName();
-        activity.setStatus("Rejected");
+        activity.setStatus(ActivityStatus.REJECTED);
         activity.setReviewerId(reviewerId);
 
         Activity savedActivity = activityRepository.save(activity);
@@ -135,11 +136,20 @@ public class ActivityService {
      */
     public List<ActivityResponse> getActivityByStatus(String status) {
         log.info("Getting activities with status: {}", status);
+        ActivityStatus activityStatus = parseActivityStatus(status);
         
-        return activityRepository.findByStatus(status)
+        return activityRepository.findByStatus(activityStatus)
                 .stream()
                 .map(activityMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    private ActivityStatus parseActivityStatus(String status) {
+        try {
+            return ActivityStatus.from(status);
+        } catch (IllegalArgumentException exception) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
     }
 
     /**

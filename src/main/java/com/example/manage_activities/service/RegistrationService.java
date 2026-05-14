@@ -3,6 +3,7 @@ package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.response.RegistrationResponse;
 import com.example.manage_activities.entity.Registration;
+import com.example.manage_activities.enums.RegistrationStatus;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.RegistrationMapper;
@@ -48,7 +49,7 @@ public class RegistrationService {
         registration.setId(generateRegistrationId());
         registration.setActivityId(activityId);
         registration.setStudentId(userId);
-        registration.setStatus("Registered");
+        registration.setStatus(RegistrationStatus.PENDING);
         registration.setCreatedAt(LocalDateTime.now());
         
         registrationRepository.save(registration);
@@ -129,17 +130,20 @@ public class RegistrationService {
                 .findByActivityIdAndStudentId(activityId, studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_NOT_FOUND));
 
-        if (!"Registered".equalsIgnoreCase(registration.getStatus())) {
-            if ("Rejected".equalsIgnoreCase(registration.getStatus())) {
+        if (!RegistrationStatus.PENDING.equals(registration.getStatus())) {
+            if (RegistrationStatus.REJECTED.equals(registration.getStatus())) {
                 throw new AppException(ErrorCode.REGISTRATION_ALREADY_REJECTED);
             }
-            if ("Cancelled".equalsIgnoreCase(registration.getStatus())) {
+            if (RegistrationStatus.CANCELLED.equals(registration.getStatus())) {
                 throw new AppException(ErrorCode.REGISTRATION_CANCELLED);
+            }
+            if (RegistrationStatus.APPROVED.equals(registration.getStatus())) {
+                throw new AppException(ErrorCode.REGISTRATION_ALREADY_APPROVED);
             }
             throw new AppException(ErrorCode.BAD_REQUEST);
         }
 
-        registration.setStatus("Rejected");
+        registration.setStatus(RegistrationStatus.REJECTED);
         registrationRepository.save(registration);
 
         notificationService.sendParticipationRejectedNotification(

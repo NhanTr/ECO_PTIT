@@ -19,6 +19,6 @@ public class RegistrationResponse {
     String id;
     String activityId;
     String studentId;
-    String status;  // Registered,  Rejected, Cancelled
+    String status;
     LocalDateTime createdAt;
 }

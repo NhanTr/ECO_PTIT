@@ -1,5 +1,6 @@
 package com.example.manage_activities.entity;
 
+import com.example.manage_activities.enums.ActivityStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -50,7 +51,7 @@ public class Activity {
     String purpose;
     
     Integer trainingPoints;
-    String status; // Draft, Pending, Approved, etc.
+    ActivityStatus status;
     
     @Column(nullable = false, updatable = false)
     LocalDateTime createdAt;

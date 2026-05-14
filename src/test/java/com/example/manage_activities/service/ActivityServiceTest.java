@@ -2,6 +2,7 @@ package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.response.ActivityResponse;
 import com.example.manage_activities.entity.Activity;
+import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.ActivityMapper;
@@ -35,7 +36,7 @@ class ActivityServiceTest {
     void approveActivity_shouldApproveAndSetReviewer() {
         Activity activity = Activity.builder()
                 .id("act1234567")
-                .status("Pending")
+                .status(ActivityStatus.PENDING)
                 .build();
         ActivityResponse response = ActivityResponse.builder()
                 .id("act1234567")
@@ -72,7 +73,7 @@ class ActivityServiceTest {
     void approveActivity_shouldThrowWhenAlreadyApproved() {
         Activity activity = Activity.builder()
                 .id("act1234567")
-                .status("Approved")
+                .status(ActivityStatus.APPROVED)
                 .build();
 
         when(activityRepository.findById("act1234567")).thenReturn(Optional.of(activity));

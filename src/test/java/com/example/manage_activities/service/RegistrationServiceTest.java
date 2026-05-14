@@ -1,6 +1,7 @@
 package com.example.manage_activities.service;
 
 import com.example.manage_activities.entity.Registration;
+import com.example.manage_activities.enums.RegistrationStatus;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.RegistrationMapper;
@@ -25,12 +26,12 @@ class RegistrationServiceTest {
             new RegistrationService(registrationRepository, registrationMapper, notificationService);
 
     @Test
-    void rejectRegistration_shouldRejectRegisteredStudentAndSendNotification() {
+    void rejectRegistration_shouldRejectPendingStudentAndSendNotification() {
         Registration registration = Registration.builder()
                 .id("reg1234567")
                 .activityId("act1234567")
                 .studentId("std1234567")
-                .status("Registered")
+                .status(RegistrationStatus.PENDING)
                 .build();
 
         when(registrationRepository.findByActivityIdAndStudentId("act1234567", "std1234567"))
@@ -39,7 +40,7 @@ class RegistrationServiceTest {
 
         registrationService.rejectRegistration("act1234567", "std1234567", "Khong du dieu kien");
 
-        assertEquals("Rejected", registration.getStatus());
+        assertEquals(RegistrationStatus.REJECTED, registration.getStatus());
         verify(registrationRepository).save(registration);
         verify(notificationService).sendParticipationRejectedNotification("std1234567", "act1234567", "Khong du dieu kien");
     }
@@ -51,7 +52,7 @@ class RegistrationServiceTest {
                 .id("reg1234567")
                 .activityId("act1234567")
                 .studentId("std1234567")
-                .status("Rejected")
+                .status(RegistrationStatus.REJECTED)
                 .build();
 
         when(registrationRepository.findByActivityIdAndStudentId("act1234567", "std1234567"))

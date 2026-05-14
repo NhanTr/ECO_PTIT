@@ -3,6 +3,7 @@ package com.example.manage_activities.mapper;
 import com.example.manage_activities.dto.request.ActivityCreateRequest;
 import com.example.manage_activities.dto.response.ActivityResponse;
 import com.example.manage_activities.entity.Activity;
+import com.example.manage_activities.enums.ActivityStatus;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -19,4 +20,8 @@ public interface ActivityMapper {
     
     // Convert Activity entity to response DTO
     ActivityResponse toDTO(Activity activity);
+
+    default String map(ActivityStatus status) {
+        return status == null ? null : status.getValue();
+    }
 }
