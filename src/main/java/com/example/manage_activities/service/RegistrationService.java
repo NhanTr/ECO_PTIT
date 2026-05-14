@@ -18,6 +18,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -175,6 +176,36 @@ public class RegistrationService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public RegistrationResponse approveRegistration(String activityId, String studentId) {
+        log.info("Approving registration for activityId: {}, studentId: {}", activityId, studentId);
+
+        Registration registration = registrationRepository.findByActivityIdAndStudentId(activityId, studentId)
+                .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_NOT_FOUND));
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new AppException(ErrorCode.ACTIVITY_NOT_FOUND));
+        ensureCanManageActivity(activity);
+
+        if (!RegistrationStatus.PENDING.equals(registration.getStatus())) {
+            if (RegistrationStatus.APPROVED.equals(registration.getStatus())) {
+                throw new AppException(ErrorCode.REGISTRATION_ALREADY_APPROVED);
+            }
+            if (RegistrationStatus.REJECTED.equals(registration.getStatus())) {
+                throw new AppException(ErrorCode.REGISTRATION_ALREADY_REJECTED);
+            }
+            if (RegistrationStatus.CANCELLED.equals(registration.getStatus())) {
+                throw new AppException(ErrorCode.REGISTRATION_CANCELLED);
+            }
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+
+        registration.setStatus(RegistrationStatus.APPROVED);
+        registration.setApprovedBy(getCurrentUserId());
+        registration.setApprovedAt(LocalDateTime.now());
+        Registration savedRegistration = registrationRepository.save(registration);
+        refreshActivityParticipantCount(activity);
+        return registrationMapper.toDTO(savedRegistration);
+    }
     /**
      * Get registration count for activity
      */
@@ -192,6 +223,9 @@ public class RegistrationService {
         Registration registration = registrationRepository
                 .findByActivityIdAndStudentId(activityId, studentId)
                 .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_NOT_FOUND));
+        Activity activity = activityRepository.findById(activityId)
+                .orElseThrow(() -> new AppException(ErrorCode.ACTIVITY_NOT_FOUND));
+        ensureCanManageActivity(activity);
 
         if (!RegistrationStatus.PENDING.equals(registration.getStatus())) {
             if (RegistrationStatus.REJECTED.equals(registration.getStatus())) {
@@ -210,7 +244,7 @@ public class RegistrationService {
         registration.setApprovedBy(null);
         registration.setApprovedAt(null);
         registrationRepository.save(registration);
-        activityRepository.findById(activityId).ifPresent(this::refreshActivityParticipantCount);
+        refreshActivityParticipantCount(activity);
 
         notificationService.sendParticipationRejectedNotification(
                 registration.getStudentId(),
@@ -314,6 +348,34 @@ public class RegistrationService {
         if (semester != null && semester != 1 && semester != 2) {
             throw new AppException(ErrorCode.BAD_REQUEST);
         }
+    }
+
+    private void ensureCanManageActivity(Activity activity) {
+        if (hasAnyAuthority("ROLE_ADMIN", "ROLE_MANAGER")) {
+            return;
+        }
+        if (!getCurrentUserId().equals(activity.getOrganizerId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    private boolean hasAnyAuthority(String... authorities) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return false;
+        }
+        for (String authority : authorities) {
+            boolean matched = authentication.getAuthorities().stream()
+                    .anyMatch(grantedAuthority -> authority.equals(grantedAuthority.getAuthority()));
+            if (matched) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String getCurrentUserId() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
     /**

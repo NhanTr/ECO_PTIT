@@ -1,8 +1,13 @@
 package com.example.manage_activities.Controller;
 
 import com.example.manage_activities.dto.request.ActivityCreateRequest;
+import com.example.manage_activities.dto.request.ActivityReportRequest;
+import com.example.manage_activities.dto.request.ActivityUpdateRequest;
+import com.example.manage_activities.dto.request.CancelActivityRequest;
 import com.example.manage_activities.dto.response.APIResponse;
+import com.example.manage_activities.dto.response.ActivityFileResponse;
 import com.example.manage_activities.dto.response.ActivityResponse;
+import com.example.manage_activities.dto.response.ClubStatisticsResponse;
 import com.example.manage_activities.service.ActivityService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -15,7 +20,16 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,22 +40,101 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class ActivityController {
-    
+
     ActivityService activityService;
-    
+
     /**
      * Create a new activity
      * POST /api/v1/activities
-     * Only ORGANIZER  can create activities
+     * Only ORGANIZER can create activities
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('ORGANIZER')")
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<ActivityResponse> createActivity(@Valid @RequestBody ActivityCreateRequest request) {
         log.info("Create activity request received for title: {}", request.getTitle());
         ActivityResponse response = activityService.createActivity(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-    
+
+    /**
+     * Update activity.
+     * PUT /api/v1/activities/{id}
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
+    public ResponseEntity<ActivityResponse> updateActivity(
+            @PathVariable String id,
+            @Valid @RequestBody ActivityUpdateRequest request) {
+        log.info("Update activity request received for ID: {}", id);
+        return ResponseEntity.ok(activityService.updateActivity(id, request));
+    }
+
+    /**
+     * Delete activity.
+     * DELETE /api/v1/activities/{id}
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
+    public ResponseEntity<APIResponse<Void>> deleteActivity(@PathVariable String id) {
+        log.info("Delete activity request received for ID: {}", id);
+        activityService.deleteActivity(id);
+        return ResponseEntity.ok(APIResponse.<Void>builder()
+                .code(1000)
+                .message("Da xoa hoat dong")
+                .build());
+    }
+
+    /**
+     * Submit draft activity for review.
+     * PATCH /api/v1/activities/{id}/submit
+     */
+    @PatchMapping("/{id}/submit")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
+    public ResponseEntity<ActivityResponse> submitForReview(@PathVariable String id) {
+        log.info("Submit activity for review request received for ID: {}", id);
+        return ResponseEntity.ok(activityService.submitForReview(id));
+    }
+
+    /**
+     * Request cancellation for an approved activity.
+     * PATCH /api/v1/activities/{id}/cancel-request
+     */
+    @PatchMapping("/{id}/cancel-request")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
+    public ResponseEntity<ActivityResponse> requestCancelActivity(
+            @PathVariable String id,
+            @Valid @RequestBody CancelActivityRequest request) {
+        log.info("Cancel activity request received for ID: {}", id);
+        return ResponseEntity.ok(activityService.requestCancelActivity(id, request.getReason()));
+    }
+
+    /**
+     * Submit activity report after the activity is closed.
+     * POST /api/v1/activities/{id}/reports
+     */
+    @PostMapping("/{id}/reports")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
+    public ResponseEntity<ActivityFileResponse> submitReport(
+            @PathVariable String id,
+            @Valid @RequestBody ActivityReportRequest request) {
+        log.info("Submit report request received for activity ID: {}", id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(activityService.submitReport(id, request));
+    }
+
+    /**
+     * Get internal club statistics.
+     * GET /api/v1/activities/my-club/statistics?year=2026&semester=1
+     */
+    @GetMapping("/my-club/statistics")
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public APIResponse<ClubStatisticsResponse> getMyClubStatistics(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer semester) {
+        return APIResponse.<ClubStatisticsResponse>builder()
+                .result(activityService.getMyClubStatistics(year, semester))
+                .build();
+    }
+
     /**
      * Get all activities with pagination
      * GET /api/v1/activities?page=0&size=10&sort=createdAt,desc
@@ -57,7 +150,7 @@ public class ActivityController {
                 .result(activities)
                 .build();
     }
-    
+
     /**
      * Get activities visible to students.
      * GET /api/v1/activities/available?keyword=&location=&fromTime=&toTime=
@@ -76,6 +169,7 @@ public class ActivityController {
                 .result(activities)
                 .build();
     }
+
     /**
      * Get activity by ID
      * GET /api/v1/activities/{id}
@@ -86,7 +180,7 @@ public class ActivityController {
         ActivityResponse activity = activityService.getActivityById(id);
         return ResponseEntity.ok(activity);
     }
-    
+
     /**
      * Get activities by organizer
      * GET /api/v1/activities/organizer/{organizerId}
@@ -99,7 +193,7 @@ public class ActivityController {
                 .result(activities)
                 .build();
     }
-    
+
     /**
      * Get activities by status
      * GET /api/v1/activities/status/{status}

@@ -6,7 +6,9 @@ import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.ActivityMapper;
+import com.example.manage_activities.repository.ActivityFileRepository;
 import com.example.manage_activities.repository.ActivityRepository;
+import com.example.manage_activities.repository.RegistrationRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -25,7 +27,10 @@ class ActivityServiceTest {
 
     private final ActivityRepository activityRepository = mock(ActivityRepository.class);
     private final ActivityMapper activityMapper = mock(ActivityMapper.class);
-    private final ActivityService activityService = new ActivityService(activityRepository, activityMapper);
+    private final RegistrationRepository registrationRepository = mock(RegistrationRepository.class);
+    private final ActivityFileRepository activityFileRepository = mock(ActivityFileRepository.class);
+    private final ActivityService activityService =
+            new ActivityService(activityRepository, activityMapper, registrationRepository, activityFileRepository);
 
     @AfterEach
     void cleanupSecurityContext() {
