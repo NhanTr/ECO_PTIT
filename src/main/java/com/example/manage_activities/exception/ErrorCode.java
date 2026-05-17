@@ -27,7 +27,21 @@ public enum ErrorCode {
     REGISTRATION_NOT_FOUND(1021, "Registration not found", HttpStatus.NOT_FOUND),
     REGISTRATION_ALREADY_APPROVED(1015, "Registration has already been approved", HttpStatus.BAD_REQUEST),
     REGISTRATION_CANCELLED(1016, "Registration was cancelled", HttpStatus.BAD_REQUEST),
-    REGISTRATION_ALREADY_REJECTED(1017, "Registration has already been rejected", HttpStatus.BAD_REQUEST);
+    REGISTRATION_ALREADY_REJECTED(1017, "Registration has already been rejected", HttpStatus.BAD_REQUEST),
+    ACTIVITY_NOT_AVAILABLE_FOR_REGISTRATION(1022, "Activity is not available for registration", HttpStatus.BAD_REQUEST),
+    REGISTRATION_DEADLINE_EXPIRED(1023, "Registration deadline has expired", HttpStatus.BAD_REQUEST),
+    ACTIVITY_FULL(1024, "Activity has reached maximum participants", HttpStatus.BAD_REQUEST),
+    REGISTRATION_CANNOT_CANCEL(1025, "Registration cannot be cancelled", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_NOT_FOUND(1026, "Notification not found", HttpStatus.NOT_FOUND),
+    ACTIVITY_CANNOT_EDIT(1027, "Activity cannot be edited in current status", HttpStatus.BAD_REQUEST),
+    ACTIVITY_CANNOT_DELETE(1028, "Activity cannot be deleted in current status", HttpStatus.BAD_REQUEST),
+    ACTIVITY_INVALID_STATUS_TRANSITION(1029, "Invalid activity status transition", HttpStatus.BAD_REQUEST),
+    ATTENDANCE_NOT_ALLOWED(1030, "Attendance is not allowed for this activity", HttpStatus.BAD_REQUEST),
+    POINT_AWARD_NOT_ALLOWED(1031, "Points cannot be awarded for this activity", HttpStatus.BAD_REQUEST),
+    ATTENDANCE_NOT_FOUND(1032, "Attendance not found", HttpStatus.NOT_FOUND),
+    ACTIVITY_REPORT_NOT_ALLOWED(1033, "Report cannot be submitted for this activity", HttpStatus.BAD_REQUEST),
+    ACTIVITY_FILE_NOT_FOUND(1034, "Activity file not found", HttpStatus.NOT_FOUND),
+    ACTIVITY_REPORT_ALREADY_REVIEWED(1035, "Report has already been reviewed", HttpStatus.BAD_REQUEST);
 
 
     private int code;

@@ -41,6 +41,32 @@ public class NotificationService {
 	}
 
 	@Transactional
+	public int sendNotificationsToStudents(NotificationCreateRequest request) {
+		return sendNotifications(request);
+	}
+
+	@Transactional
+	public void sendNotificationToUser(String receiverId, String title, String content, String type) {
+		if (receiverId == null || receiverId.isBlank()) {
+			log.info("Skip notification because receiverId is blank");
+			return;
+		}
+
+		Notification notification = Notification.builder()
+				.id(generateNotificationId())
+				.receiverId(receiverId)
+				.title(title)
+				.content(content)
+				.type(type)
+				.isRead(false)
+				.createdAt(LocalDateTime.now())
+				.build();
+
+		notificationRepository.save(notification);
+		log.info("Sent notification to user: {}", receiverId);
+	}
+
+	@Transactional
 	public int sendNotifications(NotificationCreateRequest request) {
 		validateSystemNotificationPermission(request);
 
@@ -95,6 +121,19 @@ public class NotificationService {
 		}
 	}
 
+	@Transactional
+	public NotificationResponse markNotificationReadStatus(String notificationId, boolean isRead) {
+		String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+		Notification notification = notificationRepository.findById(notificationId)
+				.orElseThrow(() -> new AppException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+		if (!userId.equals(notification.getReceiverId())) {
+			throw new AppException(ErrorCode.UNAUTHORIZED);
+		}
+
+		notification.setIsRead(isRead);
+		return toResponse(notificationRepository.save(notification));
+	}
 
 	@Transactional
 	public void sendParticipationRejectedNotification(String studentId, String activityId, String reason) {

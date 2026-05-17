@@ -1,5 +1,6 @@
 package com.example.manage_activities.entity;
 
+import com.example.manage_activities.enums.RegistrationStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -27,6 +28,11 @@ public class Registration {
     @Column(name = "student_id", length = 10)
     String studentId;
 
-    String status; // Registered, Rejected, Cancelled
+    @Column(name = "approved_by", length = 10)
+    String approvedBy;
+
+    RegistrationStatus status;
+    LocalDateTime approvedAt;
+    LocalDateTime cancelledAt;
     LocalDateTime createdAt;
 }

@@ -2,10 +2,14 @@ package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.response.ActivityResponse;
 import com.example.manage_activities.entity.Activity;
+import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.ActivityMapper;
+import com.example.manage_activities.repository.ActivityFileRepository;
 import com.example.manage_activities.repository.ActivityRepository;
+import com.example.manage_activities.repository.AttendanceRepository;
+import com.example.manage_activities.repository.RegistrationRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,7 +28,15 @@ class ActivityServiceTest {
 
     private final ActivityRepository activityRepository = mock(ActivityRepository.class);
     private final ActivityMapper activityMapper = mock(ActivityMapper.class);
-    private final ActivityService activityService = new ActivityService(activityRepository, activityMapper);
+    private final RegistrationRepository registrationRepository = mock(RegistrationRepository.class);
+    private final ActivityFileRepository activityFileRepository = mock(ActivityFileRepository.class);
+    private final AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
+    private final NotificationService notificationService = mock(NotificationService.class);
+    private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
+    private final SystemLogService systemLogService = mock(SystemLogService.class);
+    private final ActivityService activityService =
+            new ActivityService(activityRepository, activityMapper, registrationRepository, activityFileRepository,
+                    attendanceRepository, notificationService, systemConfigService, systemLogService);
 
     @AfterEach
     void cleanupSecurityContext() {
@@ -35,7 +47,7 @@ class ActivityServiceTest {
     void approveActivity_shouldApproveAndSetReviewer() {
         Activity activity = Activity.builder()
                 .id("act1234567")
-                .status("Pending")
+                .status(ActivityStatus.PENDING)
                 .build();
         ActivityResponse response = ActivityResponse.builder()
                 .id("act1234567")
@@ -72,7 +84,7 @@ class ActivityServiceTest {
     void approveActivity_shouldThrowWhenAlreadyApproved() {
         Activity activity = Activity.builder()
                 .id("act1234567")
-                .status("Approved")
+                .status(ActivityStatus.APPROVED)
                 .build();
 
         when(activityRepository.findById("act1234567")).thenReturn(Optional.of(activity));

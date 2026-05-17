@@ -2,6 +2,7 @@ package com.example.manage_activities.Controller;
 
 import com.example.manage_activities.dto.request.RejectRegistrationRequest;
 import com.example.manage_activities.dto.response.APIResponse;
+import com.example.manage_activities.dto.response.RegistrationResponse;
 import com.example.manage_activities.service.RegistrationService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -10,9 +11,9 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,6 +26,23 @@ public class ManagerRegistrationController {
 
     RegistrationService registrationService;
 
+    /**
+     * Approve one student's registration in an activity.
+     * PATCH /api/manager/registrations/{activityId}/students/{studentId}/approve
+     */
+    @PatchMapping("/{activityId}/students/{studentId}/approve")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN','ORGANIZER')")
+    public ResponseEntity<APIResponse<RegistrationResponse>> approveRegistration(
+            @PathVariable String activityId,
+            @PathVariable String studentId) {
+        log.info("Approve registration request received for activityId: {}, studentId: {}", activityId, studentId);
+        RegistrationResponse registration = registrationService.approveRegistration(activityId, studentId);
+        return ResponseEntity.ok(APIResponse.<RegistrationResponse>builder()
+                .code(1000)
+                .message("Da duyet dang ky")
+                .result(registration)
+                .build());
+    }
 
     /**
      * Reject one student's registration in an activity.
@@ -45,5 +63,3 @@ public class ManagerRegistrationController {
                 .build());
     }
 }
-
-

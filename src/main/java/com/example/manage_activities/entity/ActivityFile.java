@@ -1,5 +1,6 @@
 package com.example.manage_activities.entity;
 
+import com.example.manage_activities.enums.ReportStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -7,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "activity_files")
@@ -26,7 +28,18 @@ public class ActivityFile {
     @Column(name = "reviewer_id", length = 10)
     String reviewerId;
 
-    String reportStatus; // Not_Submitted, Processing, Done
+    @Column(name = "uploaded_by", length = 10)
+    String uploadedBy;
+
+    ReportStatus reportStatus;
     String fileUrl;
     String fileType; // Plan, Report, Image
+    String originalFileName;
+    String contentType;
+    Long fileSize;
+    LocalDateTime uploadedAt;
+    LocalDateTime reviewedAt;
+
+    @Column(columnDefinition = "TEXT")
+    String reviewNote;
 }

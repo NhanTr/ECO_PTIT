@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,6 +48,36 @@ public class NotificationController {
     }
 
     /**
+     * Mark current user's notification as read.
+     * PATCH /api/notifications/{id}/read
+     */
+    @PatchMapping("/{id}/read")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<APIResponse<NotificationResponse>> markAsRead(@PathVariable String id) {
+        NotificationResponse notification = notificationService.markNotificationReadStatus(id, true);
+        return ResponseEntity.ok(APIResponse.<NotificationResponse>builder()
+                .code(1000)
+                .message("Danh dau thong bao da doc thanh cong")
+                .result(notification)
+                .build());
+    }
+
+    /**
+     * Mark current user's notification as unread.
+     * PATCH /api/notifications/{id}/unread
+     */
+    @PatchMapping("/{id}/unread")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<APIResponse<NotificationResponse>> markAsUnread(@PathVariable String id) {
+        NotificationResponse notification = notificationService.markNotificationReadStatus(id, false);
+        return ResponseEntity.ok(APIResponse.<NotificationResponse>builder()
+                .code(1000)
+                .message("Danh dau thong bao chua doc thanh cong")
+                .result(notification)
+                .build());
+    }
+
+    /**
      * Send notifications to users (all users for System type or empty recipient list).
      * POST /api/notifications
      */
@@ -62,8 +94,4 @@ public class NotificationController {
                 .result(sentCount)
                 .build());
     }
-
-
-
-
 }
