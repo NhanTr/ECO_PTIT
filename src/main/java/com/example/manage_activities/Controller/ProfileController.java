@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.manage_activities.dto.request.ProfileRequest;
 import com.example.manage_activities.dto.response.APIResponse;
+import com.example.manage_activities.dto.response.ProfileResponse;
 import com.example.manage_activities.service.ProfileService;
 
 
@@ -21,6 +22,13 @@ import com.example.manage_activities.service.ProfileService;
 public class ProfileController {
 
     ProfileService profileService;
+
+    @GetMapping
+    public APIResponse<ProfileResponse> getMyProfile() {
+        return APIResponse.<ProfileResponse>builder()
+                .result(profileService.getMyProfile())
+                .build();
+    }
     
     /**
      * Update user profile

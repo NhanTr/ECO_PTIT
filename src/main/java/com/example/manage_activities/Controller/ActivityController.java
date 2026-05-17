@@ -143,9 +143,15 @@ public class ActivityController {
     public APIResponse<Page<ActivityResponse>> getAllActivities(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "2") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String sponsor,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
+            @RequestParam(required = false) String location,
             Pageable pageable) {
         log.info("Get all activities request received - page: {}, size: {}", page, size);
-        Page<ActivityResponse> activities = activityService.getAllActivities(pageable);
+        Page<ActivityResponse> activities = activityService.searchActivities(
+                status, sponsor, startTime, endTime, location, pageable);
         return APIResponse.<Page<ActivityResponse>>builder()
                 .result(activities)
                 .build();

@@ -121,12 +121,32 @@ public class ActivityService {
             LocalDateTime fromTime,
             LocalDateTime toTime,
             Pageable pageable) {
-        return activityRepository.searchForManager(
+        return activityRepository.searchActivities(
                         parseActivityStatuses(statuses),
                         normalizeSearchValue(keyword),
                         normalizeSearchValue(location),
+                        null,
                         fromTime,
                         toTime,
+                        pageable)
+                .map(activityMapper::toDTO);
+    }
+
+    public Page<ActivityResponse> searchActivities(
+            String status,
+            String sponsor,
+            LocalDateTime startTime,
+            LocalDateTime endTime,
+            String location,
+            Pageable pageable) {
+        List<String> statuses = status == null || status.isBlank() ? null : List.of(status);
+        return activityRepository.searchActivities(
+                        parseActivityStatuses(statuses),
+                        null,
+                        normalizeSearchValue(location),
+                        normalizeSearchValue(sponsor),
+                        startTime,
+                        endTime,
                         pageable)
                 .map(activityMapper::toDTO);
     }

@@ -1,6 +1,7 @@
 package com.example.manage_activities.service;
 
 import com.example.manage_activities.dto.request.ProfileRequest;
+import com.example.manage_activities.dto.response.ProfileResponse;
 import com.example.manage_activities.repository.ProfileRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.example.manage_activities.entity.Profile;
@@ -22,6 +23,18 @@ import java.util.UUID;
 public class ProfileService {
     
     ProfileRepository profileRepository;
+
+    public ProfileResponse getMyProfile() {
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        log.info("Getting profile for user: {}", userId);
+
+        Profile profile = profileRepository.findByUserId(userId);
+        if (profile == null) {
+            throw new AppException(ErrorCode.DONT_EXIST_PROFILE);
+        }
+
+        return toResponse(profile);
+    }
 
     public void createProfile(ProfileRequest request) {
         String userId = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -85,5 +98,17 @@ public class ProfileService {
             id = UUID.randomUUID().toString().replace("-", "").substring(0, 10);
         }
         return id;
+    }
+
+    private ProfileResponse toResponse(Profile profile) {
+        return ProfileResponse.builder()
+                .id(profile.getId())
+                .userId(profile.getUserId())
+                .fullName(profile.getFullName())
+                .studentCode(profile.getStudentCode())
+                .department(profile.getDepartment())
+                .phone(profile.getPhone())
+                .avatarUrl(profile.getAvatarUrl())
+                .build();
     }
 }

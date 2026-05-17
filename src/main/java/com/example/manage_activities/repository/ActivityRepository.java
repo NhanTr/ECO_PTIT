@@ -25,13 +25,15 @@ public interface ActivityRepository extends JpaRepository<Activity, String> {
                    OR LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(a.description) LIKE LOWER(CONCAT('%', :keyword, '%')))
               AND (:location IS NULL OR LOWER(a.location) LIKE LOWER(CONCAT('%', :location, '%')))
+              AND (:sponsor IS NULL OR LOWER(a.sponsor) LIKE LOWER(CONCAT('%', :sponsor, '%')))
               AND (:fromTime IS NULL OR a.startTime >= :fromTime)
               AND (:toTime IS NULL OR a.startTime <= :toTime)
             """)
-    Page<Activity> searchForManager(
+    Page<Activity> searchActivities(
             @Param("statuses") Collection<ActivityStatus> statuses,
             @Param("keyword") String keyword,
             @Param("location") String location,
+            @Param("sponsor") String sponsor,
             @Param("fromTime") LocalDateTime fromTime,
             @Param("toTime") LocalDateTime toTime,
             Pageable pageable);

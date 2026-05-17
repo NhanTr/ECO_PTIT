@@ -23,6 +23,9 @@ public enum ActivityStatus {
     }
 
     public static ActivityStatus from(String value) {
+        if (value != null && "completed".equalsIgnoreCase(value.trim())) {
+            return CLOSED;
+        }
         return Arrays.stream(values())
                 .filter(status -> status.name().equalsIgnoreCase(value)
                         || status.value.equalsIgnoreCase(value))
