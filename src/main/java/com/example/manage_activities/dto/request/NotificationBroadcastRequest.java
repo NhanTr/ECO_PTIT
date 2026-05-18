@@ -1,7 +1,7 @@
 package com.example.manage_activities.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,20 +9,24 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+/**
+ * QLHĐ_BM 1 — gửi thông báo thủ công theo bộ lọc đối tượng.
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RejectActivityRequest {
+public class NotificationBroadcastRequest {
 
     @NotBlank(message = "BAD_REQUEST")
-    @JsonAlias("reason")
-    String rejectReason;
+    @Size(max = 255, message = "BAD_REQUEST")
+    String title;
 
-    /** @deprecated use {@link #getRejectReason()} */
-    @Deprecated
-    public String getReason() {
-        return rejectReason;
-    }
+    @NotBlank(message = "BAD_REQUEST")
+    String content;
+
+    String className;
+    String department;
+    Integer roleId;
 }

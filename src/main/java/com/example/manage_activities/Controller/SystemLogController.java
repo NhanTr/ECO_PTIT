@@ -21,21 +21,24 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/admin/system-logs")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@PreAuthorize("hasRole('ADMIN')")
 public class SystemLogController {
 
     SystemLogService systemLogService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public APIResponse<Page<SystemLogResponse>> searchLogs(
             @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String actionType,
             @RequestParam(required = false) String action,
             @RequestParam(required = false) String tableAffected,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromTime,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toTime,
             Pageable pageable) {
+        String resolvedAction = actionType != null && !actionType.isBlank() ? actionType : action;
         return APIResponse.<Page<SystemLogResponse>>builder()
-                .result(systemLogService.searchLogs(userId, action, tableAffected, fromTime, toTime, pageable))
+                .result(systemLogService.searchLogs(
+                        userId, resolvedAction, tableAffected, fromTime, toTime, pageable))
                 .build();
     }
 }

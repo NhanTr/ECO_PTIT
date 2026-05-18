@@ -43,4 +43,19 @@ public interface UserRepository extends JpaRepository<User, String> {
             @Param("roleId") Integer roleId,
             @Param("status") String status,
             @Param("q") String q);
+
+    @Query("""
+            SELECT DISTINCT u FROM User u
+            LEFT JOIN Profile p ON p.userId = u.id
+            WHERE (u.status IS NULL OR LOWER(u.status) = 'active')
+              AND (:roleId IS NULL OR u.roleId = :roleId)
+              AND (:department IS NULL OR :department = ''
+                   OR (p.department IS NOT NULL AND LOWER(TRIM(p.department)) = LOWER(TRIM(:department))))
+              AND (:className IS NULL OR :className = ''
+                   OR (p.className IS NOT NULL AND LOWER(TRIM(p.className)) = LOWER(TRIM(:className))))
+            """)
+    List<User> findBroadcastRecipients(
+            @Param("roleId") Integer roleId,
+            @Param("department") String department,
+            @Param("className") String className);
 }

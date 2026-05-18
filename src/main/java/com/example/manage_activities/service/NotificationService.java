@@ -1,6 +1,8 @@
 package com.example.manage_activities.service;
 
+import com.example.manage_activities.dto.request.NotificationBroadcastRequest;
 import com.example.manage_activities.dto.request.NotificationCreateRequest;
+import com.example.manage_activities.dto.response.NotificationBroadcastResponse;
 import com.example.manage_activities.dto.response.NotificationResponse;
 import com.example.manage_activities.entity.Notification;
 import com.example.manage_activities.entity.User;
@@ -29,6 +31,7 @@ public class NotificationService {
 
 	NotificationRepository notificationRepository;
 	UserRepository userRepository;
+	SystemLogService systemLogService;
 
 	public List<NotificationResponse> getMyNotifications() {
 		String userId = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -43,6 +46,49 @@ public class NotificationService {
 	@Transactional
 	public int sendNotificationsToStudents(NotificationCreateRequest request) {
 		return sendNotifications(request);
+	}
+
+	@Transactional
+	public NotificationBroadcastResponse broadcastNotifications(NotificationBroadcastRequest request) {
+		Integer roleId = request.getRoleId();
+		String department = normalizeFilter(request.getDepartment());
+		String className = normalizeFilter(request.getClassName());
+
+		List<User> recipients = userRepository.findBroadcastRecipients(roleId, department, className);
+		if (recipients.isEmpty()) {
+			log.info("No recipients matched broadcast filters");
+			logBroadcast(request, 0);
+			return NotificationBroadcastResponse.builder()
+					.sentCount(0)
+					.roleId(roleId)
+					.className(className)
+					.department(department)
+					.build();
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+		List<Notification> notifications = recipients.stream()
+				.map(user -> Notification.builder()
+						.id(generateNotificationId())
+						.receiverId(user.getId())
+						.title(request.getTitle())
+						.content(request.getContent())
+						.type("System")
+						.isRead(false)
+						.createdAt(now)
+						.build())
+				.toList();
+
+		notificationRepository.saveAll(notifications);
+		log.info("Broadcast {} notifications to {} recipients", notifications.size(), recipients.size());
+		logBroadcast(request, notifications.size());
+
+		return NotificationBroadcastResponse.builder()
+				.sentCount(notifications.size())
+				.roleId(roleId)
+				.className(className)
+				.department(department)
+				.build();
 	}
 
 	@Transactional
@@ -157,6 +203,31 @@ public class NotificationService {
 			id = UUID.randomUUID().toString().substring(0, 10);
 		}
 		return id;
+	}
+
+	private void logBroadcast(NotificationBroadcastRequest request, int sentCount) {
+		String filters = "roleId=" + request.getRoleId()
+				+ ", className=" + request.getClassName()
+				+ ", department=" + request.getDepartment();
+		systemLogService.logAction(
+				getCurrentUserId(),
+				"BROADCAST_NOTIFICATION",
+				"notifications",
+				filters,
+				"title=" + request.getTitle() + ", sentCount=" + sentCount);
+	}
+
+	private String getCurrentUserId() {
+		var authentication = SecurityContextHolder.getContext().getAuthentication();
+		return authentication == null ? "system" : authentication.getName();
+	}
+
+	private String normalizeFilter(String value) {
+		if (value == null) {
+			return null;
+		}
+		String trimmed = value.trim();
+		return trimmed.isEmpty() ? null : trimmed;
 	}
 
 	private NotificationResponse toResponse(Notification notification) {

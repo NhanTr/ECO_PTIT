@@ -1,6 +1,5 @@
-package com.example.manage_activities.dto.request;
+package com.example.manage_activities.dto.response;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,11 +12,10 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class BackupRestoreRequest {
+public class NotificationBroadcastResponse {
 
-    @NotBlank(message = "BAD_REQUEST")
-    String fileName;
-
-    @NotBlank(message = "BAD_REQUEST")
-    String confirmation;
+    int sentCount;
+    Integer roleId;
+    String className;
+    String department;
 }

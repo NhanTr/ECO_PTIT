@@ -2,6 +2,7 @@ package com.example.manage_activities.repository;
 
 import com.example.manage_activities.entity.Activity;
 import com.example.manage_activities.enums.ActivityStatus;
+import com.example.manage_activities.repository.projection.ActivityStatusCountProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -80,4 +81,25 @@ public interface ActivityRepository extends JpaRepository<Activity, String> {
             Pageable pageable);
 
     boolean existsById(String id);
+
+    @Query("""
+            SELECT a FROM Activity a
+            WHERE (:fromTime IS NULL OR a.startTime >= :fromTime)
+              AND (:toTime IS NULL OR a.startTime <= :toTime)
+            ORDER BY a.startTime ASC, a.title ASC
+            """)
+    List<Activity> findForStatisticsReport(
+            @Param("fromTime") LocalDateTime fromTime,
+            @Param("toTime") LocalDateTime toTime);
+
+    @Query("""
+            SELECT a.status AS status, COUNT(a) AS count
+            FROM Activity a
+            WHERE (:fromTime IS NULL OR a.startTime >= :fromTime)
+              AND (:toTime IS NULL OR a.startTime <= :toTime)
+            GROUP BY a.status
+            """)
+    List<ActivityStatusCountProjection> countActivitiesGroupByStatus(
+            @Param("fromTime") LocalDateTime fromTime,
+            @Param("toTime") LocalDateTime toTime);
 }

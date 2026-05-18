@@ -1,6 +1,5 @@
-package com.example.manage_activities.dto.request;
+package com.example.manage_activities.dto.response;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,11 +12,13 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class BackupRestoreRequest {
+public class StudentStatisticsItemResponse {
 
-    @NotBlank(message = "BAD_REQUEST")
-    String fileName;
-
-    @NotBlank(message = "BAD_REQUEST")
-    String confirmation;
+    String studentId;
+    String studentCode;
+    String fullName;
+    String className;
+    String department;
+    Long participatedActivityCount;
+    Long totalEarnedPoints;
 }

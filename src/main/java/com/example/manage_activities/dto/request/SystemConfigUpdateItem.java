@@ -1,6 +1,5 @@
 package com.example.manage_activities.dto.request;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -14,15 +13,14 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RejectActivityRequest {
+public class SystemConfigUpdateItem {
 
     @NotBlank(message = "BAD_REQUEST")
-    @JsonAlias("reason")
-    String rejectReason;
+    String key;
 
-    /** @deprecated use {@link #getRejectReason()} */
-    @Deprecated
-    public String getReason() {
-        return rejectReason;
-    }
+    @NotBlank(message = "BAD_REQUEST")
+    String value;
+
+    String valueType;
+    String description;
 }

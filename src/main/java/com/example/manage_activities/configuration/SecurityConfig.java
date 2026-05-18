@@ -46,7 +46,8 @@ public class SecurityConfig {
             .requestMatchers("/api/admin/roles/**").hasAnyRole("ADMIN", "MANAGER")
             .requestMatchers("/api/admin/activities/**").hasAnyRole("ADMIN", "MANAGER")
 
-                // System admin only
+                // Module 4 — system administration
+            .requestMatchers("/api/admin/notifications/**").hasAnyRole("ADMIN", "MANAGER")
             .requestMatchers("/api/admin/backups/**").hasRole("ADMIN")
             .requestMatchers("/api/admin/system-configs/**").hasRole("ADMIN")
             .requestMatchers("/api/admin/system-logs/**").hasRole("ADMIN")

@@ -1,5 +1,6 @@
 package com.example.manage_activities.service;
 
+import com.example.manage_activities.dto.request.NotificationBroadcastRequest;
 import com.example.manage_activities.dto.request.NotificationCreateRequest;
 import com.example.manage_activities.dto.response.NotificationResponse;
 import com.example.manage_activities.entity.Notification;
@@ -31,7 +32,9 @@ class NotificationServiceTest {
 
     private final NotificationRepository notificationRepository = mock(NotificationRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
-    private final NotificationService notificationService = new NotificationService(notificationRepository, userRepository);
+    private final SystemLogService systemLogService = mock(SystemLogService.class);
+    private final NotificationService notificationService =
+            new NotificationService(notificationRepository, userRepository, systemLogService);
 
     @AfterEach
     void tearDown() {
@@ -80,6 +83,39 @@ class NotificationServiceTest {
         assertEquals(1, sentCount);
         verify(userRepository).findByIdIn(List.of("adm0000001"));
         verify(notificationRepository).saveAll(anyList());
+    }
+
+    @Test
+    void broadcastNotifications_shouldSendToFilteredRecipientsAndLog() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        "mng0000001",
+                        "N/A",
+                        List.of(new SimpleGrantedAuthority("ROLE_MANAGER"))
+                )
+        );
+
+        NotificationBroadcastRequest request = NotificationBroadcastRequest.builder()
+                .title("Thong bao lop")
+                .content("Hop lop tuan nay")
+                .roleId(4)
+                .className("D20CQCN01-B")
+                .build();
+
+        List<User> recipients = List.of(User.builder().id("std0000001").roleId(4).build());
+        when(userRepository.findBroadcastRecipients(4, null, "D20CQCN01-B")).thenReturn(recipients);
+        when(notificationRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = notificationService.broadcastNotifications(request);
+
+        assertEquals(1, response.getSentCount());
+        verify(userRepository).findBroadcastRecipients(4, null, "D20CQCN01-B");
+        verify(systemLogService).logAction(
+                org.mockito.ArgumentMatchers.eq("mng0000001"),
+                org.mockito.ArgumentMatchers.eq("BROADCAST_NOTIFICATION"),
+                org.mockito.ArgumentMatchers.eq("notifications"),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.contains("sentCount=1"));
     }
 
     @Test
