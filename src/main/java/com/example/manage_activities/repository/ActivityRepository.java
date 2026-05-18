@@ -38,20 +38,28 @@ public interface ActivityRepository extends JpaRepository<Activity, String> {
             @Param("toTime") LocalDateTime toTime,
             Pageable pageable);
 
+    /**
+     * Finds activities in approved/ongoing lifecycle states that share the same room (location)
+     * and have an overlapping time window with the given activity.
+     */
     @Query("""
             SELECT a FROM Activity a
-            WHERE a.status = :status
+            WHERE a.status IN :statuses
               AND a.id <> :activityId
+              AND a.location IS NOT NULL
+              AND TRIM(a.location) <> ''
               AND a.startTime IS NOT NULL
               AND a.endTime IS NOT NULL
               AND :startTime IS NOT NULL
               AND :endTime IS NOT NULL
               AND a.startTime < :endTime
               AND a.endTime > :startTime
+              AND LOWER(TRIM(a.location)) = LOWER(TRIM(:location))
             """)
-    List<Activity> findApprovedOverlappingActivities(
+    List<Activity> findScheduleConflicts(
             @Param("activityId") String activityId,
-            @Param("status") ActivityStatus status,
+            @Param("statuses") Collection<ActivityStatus> statuses,
+            @Param("location") String location,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
 

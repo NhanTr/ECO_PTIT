@@ -7,6 +7,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ProfileRepository extends JpaRepository<Profile, String> {
-    
+
     Profile findByUserId(String userId);
+
+    boolean existsByStudentCode(String studentCode);
 }

@@ -2,11 +2,12 @@ package com.example.manage_activities.repository;
 
 import com.example.manage_activities.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-
 
 @Repository
 public interface UserRepository extends JpaRepository<User, String> {
@@ -26,4 +27,20 @@ public interface UserRepository extends JpaRepository<User, String> {
     List<User> findByRoleIdAndIdIn(Integer roleId, List<String> ids);
 
     List<User> findByIdIn(List<String> ids);
+
+    @Query("""
+            SELECT u FROM User u
+            WHERE (:roleId IS NULL OR u.roleId = :roleId)
+              AND (:status IS NULL OR :status = '' OR LOWER(u.status) = LOWER(:status))
+              AND (
+                    :q IS NULL OR :q = ''
+                    OR LOWER(u.username) LIKE LOWER(CONCAT('%', :q, '%'))
+                    OR LOWER(u.email) LIKE LOWER(CONCAT('%', :q, '%'))
+                  )
+            ORDER BY u.createdAt DESC
+            """)
+    List<User> searchUsers(
+            @Param("roleId") Integer roleId,
+            @Param("status") String status,
+            @Param("q") String q);
 }

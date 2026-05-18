@@ -15,11 +15,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -93,6 +97,91 @@ class ActivityServiceTest {
                 () -> activityService.approveActivity("act1234567"));
 
         assertEquals(ErrorCode.ACTIVITY_ALREADY_APPROVED, exception.getErrorCode());
+    }
+
+    @Test
+    void approveActivity_shouldThrowWhenStatusIsCancelled() {
+        Activity activity = Activity.builder()
+                .id("act1234567")
+                .status(ActivityStatus.CANCELLED)
+                .build();
+
+        when(activityRepository.findById("act1234567")).thenReturn(Optional.of(activity));
+
+        AppException exception = assertThrows(AppException.class,
+                () -> activityService.approveActivity("act1234567"));
+
+        assertEquals(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION, exception.getErrorCode());
+    }
+
+    @Test
+    void rejectActivity_shouldPersistRejectReason() {
+        Activity activity = Activity.builder()
+                .id("act1234567")
+                .status(ActivityStatus.PENDING)
+                .title("Test Activity")
+                .organizerId("org1234567")
+                .build();
+        ActivityResponse response = ActivityResponse.builder()
+                .id("act1234567")
+                .status("Rejected")
+                .rejectReason("Khong du dieu kien")
+                .build();
+
+        when(activityRepository.findById("act1234567")).thenReturn(Optional.of(activity));
+        when(activityRepository.save(any(Activity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(activityMapper.toDTO(any(Activity.class))).thenReturn(response);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("manager01", null));
+
+        activityService.rejectActivity("act1234567", "Khong du dieu kien");
+
+        assertEquals("Khong du dieu kien", activity.getRejectReason());
+        assertEquals(ActivityStatus.REJECTED, activity.getStatus());
+        verify(activityRepository).save(activity);
+    }
+
+    @Test
+    void submitForReview_shouldReturnScheduleWarningsWithoutBlocking() {
+        LocalDateTime start = LocalDateTime.of(2026, 6, 1, 9, 0);
+        LocalDateTime end = LocalDateTime.of(2026, 6, 1, 11, 0);
+        Activity activity = Activity.builder()
+                .id("act1234567")
+                .status(ActivityStatus.DRAFT)
+                .location("Phong A101")
+                .startTime(start)
+                .endTime(end)
+                .organizerId("org1234567")
+                .build();
+        Activity conflicting = Activity.builder()
+                .id("act9999999")
+                .title("Existing")
+                .location("Phong A101")
+                .status(ActivityStatus.APPROVED)
+                .startTime(start)
+                .endTime(end)
+                .build();
+
+        when(activityRepository.findById("act1234567")).thenReturn(Optional.of(activity));
+        when(activityRepository.save(any(Activity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(activityMapper.toDTO(any(Activity.class))).thenReturn(ActivityResponse.builder().id("act1234567").build());
+        when(activityRepository.findScheduleConflicts(
+                eq("act1234567"),
+                any(),
+                eq("Phong A101"),
+                eq(start),
+                eq(end)))
+                .thenReturn(List.of(conflicting));
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("org1234567", null));
+
+        var result = activityService.submitForReview("act1234567");
+
+        assertEquals(ActivityStatus.PENDING, activity.getStatus());
+        assertNotNull(result.getScheduleConflicts());
+        assertEquals(1, result.getScheduleConflicts().size());
     }
 }
 

@@ -12,13 +12,8 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ProfileResponse {
-    String id;
-    String userId;
-    String fullName;
-    String studentCode;
-    String className;
-    String department;
-    String phone;
-    String avatarUrl;
+public class RoleResponse {
+    Integer id;
+    String roleName;
+    String displayNameVi;
 }

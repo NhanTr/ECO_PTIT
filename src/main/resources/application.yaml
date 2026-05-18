@@ -21,4 +21,5 @@ server:
 
 jwt:
   secret-key: ${JWT_SECRET_KEY}
-  valid-duration: ${JWT_VALID_DURATION:3600}
+  valid-duration: ${JWT_VALID_DURATION:900}
+  refresh-duration: ${JWT_REFRESH_DURATION:604800}

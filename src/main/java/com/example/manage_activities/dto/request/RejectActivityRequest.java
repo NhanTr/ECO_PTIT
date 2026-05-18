@@ -1,5 +1,6 @@
 package com.example.manage_activities.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,12 @@ import lombok.experimental.FieldDefaults;
 public class RejectActivityRequest {
 
     @NotBlank(message = "Reason must not be blank")
-    String reason;
-}
+    @JsonAlias("reason")
+    String rejectReason;
 
+    /** @deprecated use {@link #getRejectReason()} */
+    @Deprecated
+    public String getReason() {
+        return rejectReason;
+    }
+}

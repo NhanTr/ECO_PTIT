@@ -1,0 +1,642 @@
+XÁC ĐỊNH YÊU CẦU
+Phần mềm Quản lý Hoạt động Sinh viên HVCS
+I. KHẢO SÁT HIỆN TRẠNG
+Phần mềm Quản lý Hoạt động Sinh viên HVCS được xây dựng nhằm số hóa và hiện đại hóa công tác tổ chức, theo dõi và đánh giá các hoạt động ngoại khóa, phong trào sinh viên trong nhà trường. Hiện tại, quy trình quản lý hoạt động còn nhiều thủ công, dễ xảy ra sai sót và thiếu minh bạch.
+ 
+1. Quy mô hoạt động
+•        Hệ thống phục vụ toàn bộ sinh viên đang học tập tại HVCS.
+•        Các Ban tổ chức/Câu lạc bộ (CLB) tổ chức và vận hành sự kiện.
+•        Quản lý  thực hiện kiểm duyệt hoạt động quản lý thông tin chung của tất cả hoạt động
+•        Quản trị hệ thống giám sát, quản lý cấu hình và tài khoản toàn hệ thống.
+2. Cơ cấu tổ chức
+Hệ thống bao gồm 4 nhóm người dùng chính với các trách nhiệm và quyền hạn riêng biệt:
+ 
+•        Sinh viên: tham gia hoạt động, theo dõi điểm cá nhân.
+•        Ban tổ chức/CLB: tạo, quản lý và báo cáo hoạt động.
+•        Quản lý : kiểm duyệt hoạt động, thống kê.
+•        Quản trị hệ thống: Quản lý tài khoản, cấu hình hệ thống, sao lưu và phân quyền.
+
+
+ 
+3. Hiện trạng nghiệp vụ
+Quy trình chính hiện tại gồm các công việc sau:
+ 
+•        BTC/CLB lập kế hoạch tổ chức hoạt động và nộp hồ sơ đề xuất.
+•        Giảng viên/Quản lý xem xét và phê duyệt hoặc từ chối hồ sơ.
+•        Sau khi được duyệt, hoạt động được thông báo đến sinh viên để đăng ký.
+•        BTC/CLB thực hiện điểm danh trong quá trình tổ chức.
+•        Sau khi hoạt động kết thúc, BTC/CLB nộp báo cáo và cấp điểm cho sinh viên.
+•        Quản lý tổng hợp thống kê định kỳ.
+ 
+II. XÁC ĐỊNH YÊU CẦU CHỨC NĂNG NGHIỆP VỤ
+ 
+Bộ phận: Sinh viên   Mã số: SV
+ Vai trò: Sinh viên HVCS
+
+ 
+STT
+Công việc
+Loại công việc
+Quy định/Công thức liên quan
+Biểu mẫu liên quan
+Ghi chú
+1
+Xem danh sách hoạt động
+Tra cứu
+Chỉ hiển thị trạng thái &quot;Đã duyệt&quot;
+ Giao diện Danh Sách
+ Hệ thống mặc định sắp xếp theo thời gian mới nhất.
+2
+Xem chi tiết hoạt động
+Tra cứu
+ Không
+ Giao diện chi tiết
+ Hiển thị đầy đủ thông tin mô tả, thời gian, địa điểm.
+3
+Đăng ký tham gia hoạt động
+Lưu trữ
+SV_QĐ 1
+
+SV_BM 1
+ Cần chờ BTC/CLB duyệt
+4
+Hủy đăng ký tham gia
+Lưu trữ
+SV_QĐ 2
+ Giao diện Chi tiết
+ Ghi log hệ thống thao tác hủy để phục vụ hậu kiểm
+5
+Xem điểm tham gia hoạt động cá nhân
+Tra cứu
+ Không
+ Giao diện Cá nhân
+ Cập nhật realtime (thời gian thực) khi có điểm mới.
+6
+Xem lịch sử hoạt động đã tham gia
+Tra cứu
+ Không
+ Giao diện Cá nhân
+ Có bộ lọc theo học kỳ/năm học để dễ quản lý.
+7
+Nhận thông báo từ hệ thống
+Tra cứu
+Không
+ Giao diện Thông báo
+Hiển thị dạng pop-up hoặc badge trên icon 
+Bảng yêu cầu chức năng nghiệp vụ - Sinh viên
+ 
+Bảng Quy định/Công thức liên quan - Sinh viên
+ 
+STT
+Mã số
+Tên Quy định/Công thức
+Mô tả chi tiết
+Ghi chú
+1
+SV_QĐ 1
+Quy định đăng ký hợp lệ
+Hoạt động có trạng thái = “Đã duyệt”
+Thời gian hiện tại &lt;= Thời hạn đóng đăng ký
+Số lượng đăng ký hiện tại &lt; Số lượng tối đa
+Tài khoản chưa từng đăng ký (hoặc đã hủy trước đó)
+Nếu thỏa mãn: Lưu bản ghi, gửi thông báo thành công.
+Nếu vi phạm: Ném lỗi (exception) tương ứng lên giao diện (UI).
+ 
+2
+SV_QĐ 2
+Quy định hủy hợp lệ
+Tồn tại bản ghi đăng ký hợp lệ
+Thời gian hiện tại  &lt; Thời gian bắt đầu hoạt động (hoặc trước 24h)
+ Đổi trạng thái bản ghi thành &quot;Đã hủy&quot;, hoàn trả 1 slot trống cho hệ thống.
+ 
+Biểu mẫu liên quan - Sinh viên
+ 
+SV_BM 1: PHIẾU ĐĂNG KÝ THAM GIA HOẠT ĐỘNG
+ 
+
+Mã sinh viên: ..................................... Họ và tên: ............................................
+Khoa/Lớp: ......................................... Ngày đăng ký: .......................................
+▢ Tôi cam kết tham gia sự kiện đúng giờ và tuân thủ quy định của Ban tổ chức
+
+
+Ghi chú:
+Dữ liệu hệ thống tự động trích xuất (Read-only)
+Mã sinh viên: Lấy từ Session/Token đăng nhập.
+Họ và tên: Truy vấn từ bảng Profile cá nhân.
+Khoa/Lớp: Truy vấn từ bảng Profile cá nhân.
+Ngày đăng kí: Lấy ngày của hiện tại
+
+ 
+Bộ phận: Ban tổ chức / Câu lạc bộ (BTC/CLB)   Mã số: BTC
+ Vai trò: Câu lạc bộ, Đoàn Khoa tổ chức
+
+ 
+STT
+Công việc
+Loại công việc
+Quy định/Công thức liên quan
+Biểu mẫu liên quan
+Ghi chú
+1
+Đăng ký tổ chức hoạt động
+Lưu trữ
+BTC_QĐ 1
+BTC_QĐ 2
+BTC_BM 1
+Cần giảng viên duyệt
+2
+Chỉnh sửa hoạt động
+Lưu trữ
+Chỉ chỉnh sửa khi ở trạng thái Chờ duyệt hoặc Bị từ chối
+ 
+ 
+3
+Xóa hoạt động
+Lưu trữ
+Chỉ xóa khi ở trạng thái Chờ duyệt
+ 
+ 
+4
+Gửi yêu cầu hủy hoạt động
+Lưu trữ
+ Chỉ được phép hủy khi đã được duyệt
+ 
+ 
+5
+Quản lý danh sách sinh viên tham gia
+Tra cứu, Lưu trữ
+ 
+ 
+ 
+6
+Duyệt sinh viên tham gia hoạt động
+Lưu trữ
+ 
+ 
+ 
+7
+Điểm danh người tham gia
+Lưu trữ
+Chỉ khả dụng khi hoạt động ở trạng thái Đang diễn ra
+BTC_BM 2
+ 
+8
+Quản lý điểm hoạt động sinh viên
+Tính toán, Lưu trữ
+BTC_QĐ 3
+ 
+ 
+9
+Gửi báo cáo hoạt động sau khi kết thúc
+Lưu trữ, Kết xuất
+BTC_QĐ 4
+BTC_BM 3
+ 
+10
+Nhận thông báo từ hệ thống
+Tra cứu
+Nhận khi quản lý chuyển trạng thái hoạt động hoặc báo cáo
+ 
+ 
+11
+Lọc và tìm kiếm hoạt động
+Tra cứu
+ 
+ 
+ 
+12
+Xem thống kê nội bộ CLB
+Tổng hợp, thống kê
+Số hoạt động đã tổ chức, tổng sinh viên tham gia, tỉ lệ hoàn thành theo từng học kỳ/năm.
+
+
+Bảng yêu cầu chức năng nghiệp vụ - BTC/CLB
+ 
+Bảng Quy định/Công thức liên quan - BTC/CLB
+ 
+STT
+Mã số
+Tên Quy định/Công thức
+Mô tả chi tiết
+Ghi chú
+1
+BTC_QĐ 1
+Quy định đăng ký tổ chức hoạt động
+Tài khoản BTC/CLB phải được xác thực.
+Thông tin hoạt động phải đầy đủ: tên, phòng, thời gian, kinh phí, mục đích, đối tượng tham gia.
+ 
+2
+BTC_QĐ 2
+Quy định trạng thái hoạt động
+Vòng đời trạng thái: Chờ duyệt → Đang duyệt → Đã duyệt → Đang diễn ra → Đã đóng. Các nhánh: Bị từ chối, Bị hủy.
+ 
+3
+BTC_QĐ 3
+Quy định cấp điểm hoạt động
+Điểm hoạt động được cấp sau khi điểm danh xác nhận sinh viên có mặt và hoạt động ở trạng thái Đã đóng.
+ 
+4
+BTC_QĐ 4
+Quy định nộp báo cáo hoạt động
+Báo cáo phải được nộp sau khi hoạt động kết thúc. Trạng thái báo cáo: Chờ duyệt → Đang duyệt → Đã duyệt. Các nhánh: Bị hủy, Bị từ chối.
+ 
+ 
+Biểu mẫu liên quan - BTC/CLB
+ 
+BTC_BM 1: PHIẾU ĐĂNG KÝ TỔ CHỨC HOẠT ĐỘNG
+ 
+Tên Ban tổ chức/CLB: ..............................................................................
+Tên hoạt động: .....................................................................................
+Phòng tổ chức: ............................ Thời gian: .....................................
+Kinh phí dự kiến: ......................... Nhà tài trợ (nếu có): ......................
+Đối tượng tham gia: .................... Điểm tham gia dự kiến: ......................
+Mục đích tổ chức: ..................................................................................
+ 
+Ngày ..... tháng ..... năm .....                            Người đại diện BTC/CLB
+ 
+BTC_BM 2: BẢNG ĐIỂM DANH THAM GIA HOẠT ĐỘNG
+ 
+Tên hoạt động: ..............................................................................
+Thời gian: ..................................... Địa điểm: ...........................
+ 
+STT
+Mã sinh viên
+Họ và tên
+Khoa/Lớp
+Có mặt (✓/✗)
+Điểm
+1
+ 
+ 
+ 
+ 
+ 
+2
+ 
+ 
+ 
+ 
+ 
+3
+ 
+ 
+ 
+ 
+ 
+ 
+Người điểm danh: ............................. Ngày điểm danh: .......................
+ 
+BTC_BM 3: BÁO CÁO KẾT QUẢ HOẠT ĐỘNG
+ 
+Tên hoạt động: ..............................................................................
+Thời gian tổ chức: .......................... Địa điểm: .............................
+Số sinh viên tham gia thực tế: ............. Điểm hoạt động cấp: ...................
+Kinh phí tổ chức thực tế :....................................................................
+Tóm tắt kết quả: ..................................................................................
+...................................................................................................
+ 
+Ngày ..... tháng ..... năm .....                            Người lập báo cáo
+ 
+LUỒNG TRẠNG THÁI HOẠT ĐỘNG-366712352425
+
+
+
+
+
+LUỒNG TRẠNG THÁI BÁO CÁO
+
+Bộ phận: Quản lý    Mã số: QLHĐ
+ Vai trò: Giảng viên / Chuyên viên phòng Công tác Sinh viên  —  Phạm vi: Kiểm duyệt và điều phối hoạt động sinh viên
+
+STT
+Công việc
+Loại công việc
+Quy định/Công thức liên quan
+Biểu mẫu liên quan
+Ghi chú
+1
+Lọc và tìm kiếm hoạt động theo trạng thái vòng đời
+Tra cứu
+ 
+ 
+ 
+2
+Duyệt yêu cầu tổ chức hoạt động
+Lưu trữ
+QLHĐ_QĐ 1
+ 
+Gửi thông báo tự động đến BTC/CLB sau khi duyệt/từ chối
+3
+Duyệt yêu cầu hủy hoạt động
+Lưu trữ
+ 
+ 
+ 
+4
+Quản lý thông tin hoạt động
+Lưu trữ, Tra cứu
+ 
+ 
+ 
+5
+Quản lý lịch hoạt động và kiểm tra trùng lịch
+Tính toán, Tra cứu
+QLHĐ_QĐ 2
+ 
+ 
+6
+Gửi thông báo thủ công cho sinh viên/CLB
+Kết xuất
+ 
+QLHĐ_BM 1
+ 
+7
+Thống kê tổng số hoạt động
+Tổng hợp, thống kê
+ 
+QLHĐ_BM 2
+ 
+8
+Thống kê số lượng sinh viên tham gia và điểm hoạt động
+Tổng hợp, thống kê
+ 
+QLHĐ_BM 3
+ 
+9
+Duyệt báo cáo hoạt động sau khi kết thúc
+Lưu trữ
+QLHĐ_QĐ 3
+
+
+Bảng yêu cầu chức năng nghiệp vụ - Quản lý hoạt động
+ 
+Bảng Quy định/Công thức liên quan - Quản lý hoạt động
+ 
+STT
+Mã số
+Tên Quy định/Công thức
+Mô tả chi tiết
+Ghi chú
+1
+QLHĐ_QĐ 1
+Quy định duyệt hoạt động
+Quản lý xem xét thông tin hoạt động do BTC/CLB đề xuất.
+Duyệt: chuyển trạng thái sang Đã duyệt, hệ thống gửi thông báo cho BTC/CLB.
+Từ chối: kèm lý do, hệ thống gửi thông báo cho BTC/CLB.
+ 
+2
+QLHĐ_QĐ 2
+Quy định kiểm tra trùng lịch hoạt động
+Hệ thống tự động cảnh báo khi có hoạt động mới trùng phòng hoặc trùng khung giờ với hoạt động đã được duyệt.
+ 
+3
+QLHĐ_QĐ 3
+Quy định duyệt báo cáo hoạt động
+Báo cáo do BTC/CLB nộp sau khi hoạt động kết thúc.
+• Duyệt: xác nhận hoạt động hoàn tất, kích hoạt cấp điểm chính thức nếu chưa cấp.
+• Từ chối: kèm lý do, BTC/CLB phải nộp lại.
+Trạng thái báo cáo: Chờ duyệt → Đang duyệt → Đã duyệt. Nhánh: Bị từ chối, Bị hủy
+ 
+ 
+Biểu mẫu liên quan - Quản lý hoạt động
+ 
+QLHĐ_BM 1: MẪU THÔNG BÁO GỬI SINH VIÊN/CLB
+ 
+Kính gửi: ..................................................................................................
+Nội dung thông báo: ...................................................................................
+...................................................................................................
+Thời gian hiệu lực: .............................
+ 
+Ngày ..... tháng ..... năm .....                                Người gửi thông báo
+ 
+QLHĐ_BM 2: BÁO CÁO THỐNG KÊ HOẠT ĐỘNG
+ 
+Từ ngày: ....................... Đến ngày: .......................
+ 
+STT
+Tên hoạt động
+Ban tổ chức
+Số SV đăng ký
+Số SV tham gia
+Trạng thái
+1
+ 
+ 
+ 
+ 
+ 
+2
+ 
+ 
+ 
+ 
+ 
+ 
+Ngày lập báo cáo: ........................... Người lập: .............................
+ 
+QLHĐ_BM 3: BÁO CÁO ĐIỂM HOẠT ĐỘNG SINH VIÊN
+ 
+Từ ngày: ....................... Đến ngày: .......................
+Khoa/Lớp (nếu lọc): ......................
+ 
+STT
+Mã sinh viên
+Họ và tên
+Lớp
+Số hoạt động
+Tổng điểm
+1
+ 
+ 
+ 
+ 
+ 
+2
+ 
+ 
+ 
+ 
+ 
+ 
+Ngày lập báo cáo: ........................... Người lập: .............................
+ 
+Bộ phận: Quản trị Hệ thống    Mã số: QTHT
+Vai trò: Bộ phận IT / Admin kỹ thuật   |   Phạm vi: Vận hành và bảo trì kỹ thuật toàn hệ thống
+
+
+STT
+Công việc
+Loại công việc
+Quy định/Công thức liên quan
+Biểu mẫu liên quan
+Ghi chú
+1
+Tạo và quản lý tài khoản người dùng
+Lưu trữ
+ 
+ 
+Bao gồm tài khoản Sinh viên, Giảng viên/QLHĐ, BTC/CLB.
+2
+Phân quyền người dùng
+Lưu trữ
+QTHT_QĐ 1
+ 
+Gán/thu hồi vai trò; áp dụng ngay sau khi lưu.
+3
+Quản lý cấu hình hệ thống
+Lưu trữ
+ 
+ 
+Cấu hình mức điểm, trạng thái vòng đời, session timeout, v.v. Không cần can thiệp mã nguồn.
+4
+Theo dõi lịch sử thao tác hệ thống (System Logs)
+Tra cứu
+ 
+ 
+Ghi lại: người thực hiện, hành động, bảng bị ảnh hưởng, giá trị cũ/mới, thời gian. Chỉ QTHT được xem toàn bộ.
+5
+Thống kê dữ liệu toàn hệ thống
+Tổng hợp, thống kê
+ 
+QTHT_BM 1
+Tổng hợp số liệu toàn hệ thống: người dùng, hoạt động, điểm, tải hệ thống. Xuất file Excel/PDF.
+6
+Sao lưu và phục hồi dữ liệu
+Lưu trữ
+QTHT_QĐ 2
+ 
+Chỉ QTHT được thực hiện. Sao lưu định kỳ tự động hoặc thủ công theo yêu cầu.
+2. Bảng quy định / công thức liên quan – Quản trị hệ thống
+STT
+Mã số
+Tên Quy định/Công thức
+Mô tả chi tiết
+Ghi chú
+1
+QTHT_QĐ 1
+Quy định phân quyền người dùng
+Hệ thống hỗ trợ 4 vai trò:
+• Quản trị hệ thống (QTHT): toàn quyền trên tất cả chức năng.
+• Quản lý hoạt động (QLHĐ): duyệt hoạt động, lịch, thông báo, thống kê nghiệp vụ.
+• BTC/CLB: quản lý hoạt động, điểm danh, báo cáo.
+• Sinh viên: xem, đăng ký, theo dõi điểm cá nhân.
+Quy tắc: mỗi tài khoản chỉ được gán 1 vai trò chính. Thay đổi vai trò áp dụng ngay lập tức.
+
+2
+QTHT_QĐ 2
+Quy định sao lưu và phục hồi dữ liệu
+Chỉ tài khoản QTHT mới được thực hiện sao lưu và phục hồi.
+• Sao lưu tự động: chạy theo lịch định kỳ (hàng ngày/tuần) do QTHT cấu hình.
+• Sao lưu thủ công: QTHT có thể kích hoạt bất kỳ lúc nào.
+• Phục hồi: chọn điểm khôi phục từ danh sách bản sao lưu; hệ thống xác nhận trước khi thực hiện.
+ 
+
+3. Biểu mẫu liên quan – Quản trị hệ thống
+QTHT_BM 1: Báo cáo Thống kê Dữ liệu Toàn hệ thống
+STT
+Danh mục
+Tổng số
+Hoạt động trong kỳ
+Tháng hiện tại
+Tăng/giảm so với kỳ trước
+Ghi chú
+1
+ 
+ 
+ 
+ 
+ 
+ 
+2
+ 
+ 
+ 
+ 
+ 
+ 
+3
+ 
+ 
+ 
+ 
+ 
+ 
+4
+ 
+ 
+ 
+ 
+ 
+ 
+5
+ 
+ 
+ 
+ 
+ 
+ 
+
+III. XÁC ĐỊNH YÊU CẦU CHỨC NĂNG HỆ THỐNG
+ 
+STT
+Nội dung
+Mô tả chi tiết
+Ghi chú
+1
+Phân quyền sử dụng
+- Quản lý &amp; Quản trị hệ thống: toàn quyền trên tất cả chức năng.
+- Giảng viên/Quản lý hoạt động: duyệt hoạt động, quản lý tài khoản, xem thống kê.
+- BTC/CLB: quản lý hoạt động, điểm danh, báo cáo.
+- Sinh viên: xem hoạt động, đăng ký, theo dõi điểm cá nhân.
+ 
+2
+Theo dõi lịch sử thao tác (System Logs)
+Hệ thống ghi lại mọi thao tác của người dùng gồm: người thực hiện, hành động, bảng dữ liệu bị ảnh hưởng, giá trị cũ và mới, thời gian thực hiện.
+ 
+3
+Gửi thông báo tự động
+Hệ thống tự động gửi thông báo đến người dùng liên quan khi có sự kiện thay đổi trạng thái hoạt động, đăng ký thành công, hoặc có điểm mới.
+ 
+4
+Xác thực và bảo mật đăng nhập
+Người dùng đăng nhập bằng tài khoản và mật khẩu. Hệ thống sử dụng cơ chế xác thực bảo mật, phân biệt phiên làm việc theo vai trò.
+ 
+5
+Sao lưu và phục hồi dữ liệu
+Hỗ trợ sao lưu định kỳ dữ liệu hệ thống và phục hồi khi có sự cố. Chỉ quản lý hệ thống mới có quyền thực hiện.
+ 
+6
+Kiểm tra trùng lịch hoạt động tự động
+Khi BTC/CLB đăng ký hoạt động, hệ thống tự động kiểm tra và cảnh báo nếu trùng phòng hoặc khung giờ với hoạt động đã được duyệt.
+ 
+Bảng yêu cầu chức năng hệ thống
+ 
+IV. XÁC ĐỊNH YÊU CẦU VỀ CHẤT LƯỢNG
+ 
+STT
+Nội dung
+Tiêu chuẩn
+Mô tả chi tiết
+Ghi chú
+1
+Cho phép thay đổi quy định điểm hoạt động và trạng thái vòng đời hoạt động
+Tiến hóa
+Quản lý hệ thống có thể cấu hình lại mức điểm tham gia và các trạng thái vòng đời hoạt động mà không cần can thiệp vào mã nguồn.
+ 
+2
+Giao diện trực quan, dễ sử dụng cho sinh viên không chuyên tin học
+Tiện dụng
+Hỗ trợ tìm kiếm hoạt động theo tên, thời gian, địa điểm. Giao diện hiển thị lịch hoạt động rõ ràng. Thông báo được hiển thị tức thì.
+ 
+3
+Tốc độ xử lý đăng ký và tra cứu nhanh
+Hiệu quả
+Tối đa 5 giây cho thao tác đăng ký tham gia hoạt động. Tối đa 3 giây cho kết quả tìm kiếm/lọc hoạt động.
+ 
+4
+Tương thích đa nền tảng và nhất quán giao diện
+Tương thích
+Phần mềm hoạt động ổn định trên các trình duyệt web phổ biến (Chrome, Firefox, Edge). Giao diện nhất quán giữa các màn hình chức năng.
+ 
+Bảng yêu cầu về chất lượng hệ thống
+

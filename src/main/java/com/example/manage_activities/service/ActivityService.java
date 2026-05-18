@@ -38,7 +38,6 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -56,6 +55,12 @@ public class ActivityService {
             List.of(ActivityStatus.DRAFT, ActivityStatus.PENDING);
     private static final List<RegistrationStatus> COUNTED_REGISTRATION_STATUSES =
             List.of(RegistrationStatus.PENDING, RegistrationStatus.APPROVED);
+    private static final List<ActivityStatus> SCHEDULE_CONFLICT_STATUSES =
+            List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
+    private static final List<ActivityStatus> APPROVABLE_STATUSES =
+            List.of(ActivityStatus.PENDING, ActivityStatus.REVIEWING);
+    private static final List<ActivityStatus> REJECTABLE_STATUSES =
+            List.of(ActivityStatus.PENDING, ActivityStatus.REVIEWING);
 
     ActivityRepository activityRepository;
     ActivityMapper activityMapper;
@@ -194,7 +199,7 @@ public class ActivityService {
     }
 
     @Transactional
-    public ActivityResponse submitForReview(String id) {
+    public ActivityReviewResponse submitForReview(String id) {
         Activity activity = getActivityEntity(id);
         ensureCanManageActivity(activity);
 
@@ -204,10 +209,18 @@ public class ActivityService {
 
         activity.setStatus(ActivityStatus.PENDING);
         Activity savedActivity = activityRepository.save(activity);
+        List<ActivityScheduleConflictResponse> scheduleConflicts = findScheduleConflicts(savedActivity);
+        if (!scheduleConflicts.isEmpty()) {
+            log.warn("Schedule conflict warning for activityId={}: {} conflicting activity(ies)",
+                    id, scheduleConflicts.size());
+        }
         systemLogService.logAction(getCurrentUserId(), "SUBMIT_ACTIVITY", "activities",
                 "activityId=" + id + ", status=Draft",
                 "activityId=" + id + ", status=Pending");
-        return activityMapper.toDTO(savedActivity);
+        return ActivityReviewResponse.builder()
+                .activity(activityMapper.toDTO(savedActivity))
+                .scheduleConflicts(scheduleConflicts)
+                .build();
     }
 
     @Transactional
@@ -313,6 +326,7 @@ public class ActivityService {
         if (ActivityStatus.APPROVED.equals(activity.getStatus())) {
             throw new AppException(ErrorCode.ACTIVITY_ALREADY_APPROVED);
         }
+        ensureActivityStatusIn(activity, APPROVABLE_STATUSES, "approve");
 
         String reviewerId = getCurrentUserId();
         activity.setStatus(ActivityStatus.APPROVED);
@@ -329,38 +343,38 @@ public class ActivityService {
     }
 
     /**
-     * Reject activity so it can be publicly available.
+     * Reject activity proposal (QLHĐ_QĐ 1).
      */
     @Transactional
-    public ActivityResponse rejectActivity(String id, String reason) {
-        log.info("Rejecting activity with ID: {}, reason: {}", id, reason);
+    public ActivityResponse rejectActivity(String id, String rejectReason) {
+        log.info("Rejecting activity with ID: {}, reason: {}", id, rejectReason);
 
         Activity activity = getActivityEntity(id);
 
         if (ActivityStatus.REJECTED.equals(activity.getStatus())) {
             throw new AppException(ErrorCode.ACTIVITY_ALREADY_REJECTED);
         }
+        ensureActivityStatusIn(activity, REJECTABLE_STATUSES, "reject");
 
         String reviewerId = getCurrentUserId();
+        activity.setRejectReason(rejectReason);
         activity.setStatus(ActivityStatus.REJECTED);
         activity.setReviewerId(reviewerId);
 
         Activity savedActivity = activityRepository.save(activity);
         notifyOrganizer(savedActivity,
                 "Hoat dong bi tu choi",
-                "Hoat dong \"" + savedActivity.getTitle() + "\" bi tu choi. Ly do: " + reason);
+                "Hoat dong \"" + savedActivity.getTitle() + "\" bi tu choi. Ly do: " + rejectReason);
         systemLogService.logAction(reviewerId, "REJECT_ACTIVITY", "activities",
                 "activityId=" + id,
-                "activityId=" + id + ", status=Rejected, reason=" + reason);
+                "activityId=" + id + ", status=Rejected, rejectReason=" + rejectReason);
         return activityMapper.toDTO(savedActivity);
     }
 
     @Transactional
     public ActivityResponse approveCancelRequest(String id) {
         Activity activity = getActivityEntity(id);
-        if (!ActivityStatus.REVIEWING.equals(activity.getStatus())) {
-            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
-        }
+        ensureActivityStatusIn(activity, List.of(ActivityStatus.REVIEWING), "approve-cancel");
 
         activity.setStatus(ActivityStatus.CANCELLED);
         activity.setReviewerId(getCurrentUserId());
@@ -377,9 +391,7 @@ public class ActivityService {
     @Transactional
     public ActivityResponse rejectCancelRequest(String id, String reason) {
         Activity activity = getActivityEntity(id);
-        if (!ActivityStatus.REVIEWING.equals(activity.getStatus())) {
-            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
-        }
+        ensureActivityStatusIn(activity, List.of(ActivityStatus.REVIEWING), "reject-cancel");
 
         activity.setStatus(ActivityStatus.APPROVED);
         activity.setReviewerId(getCurrentUserId());
@@ -646,50 +658,48 @@ public class ActivityService {
         if (activity.getStartTime() == null || activity.getEndTime() == null) {
             return List.of();
         }
+        String normalizedLocation = normalizeLocation(activity.getLocation());
+        if (normalizedLocation == null) {
+            return List.of();
+        }
 
-        return activityRepository.findApprovedOverlappingActivities(
+        return activityRepository.findScheduleConflicts(
                         activity.getId(),
-                        ActivityStatus.APPROVED,
+                        SCHEDULE_CONFLICT_STATUSES,
+                        normalizedLocation,
                         activity.getStartTime(),
                         activity.getEndTime())
                 .stream()
-                .map(conflict -> toScheduleConflictResponse(activity, conflict))
+                .map(conflict -> toScheduleConflictResponse(conflict))
                 .toList();
     }
 
-    private ActivityScheduleConflictResponse toScheduleConflictResponse(Activity activity, Activity conflict) {
-        boolean sameLocation = isSameLocation(activity.getLocation(), conflict.getLocation());
-        boolean overlappingTime = isOverlapping(activity, conflict);
-        String warning = sameLocation
-                ? "Trung phong va trung khung gio voi hoat dong da duyet"
-                : "Trung khung gio voi hoat dong da duyet";
-
+    private ActivityScheduleConflictResponse toScheduleConflictResponse(Activity conflict) {
         return ActivityScheduleConflictResponse.builder()
                 .activityId(conflict.getId())
                 .title(conflict.getTitle())
                 .location(conflict.getLocation())
                 .startTime(conflict.getStartTime())
                 .endTime(conflict.getEndTime())
-                .sameLocation(sameLocation)
-                .overlappingTime(overlappingTime)
-                .warning(warning)
+                .sameLocation(true)
+                .overlappingTime(true)
+                .warning("Trung phong va trung khung gio voi hoat dong da duyet hoac dang dien ra")
                 .build();
     }
 
-    private boolean isSameLocation(String first, String second) {
-        if (first == null || second == null) {
-            return false;
+    private void ensureActivityStatusIn(Activity activity, Collection<ActivityStatus> allowedStatuses, String action) {
+        if (!allowedStatuses.contains(activity.getStatus())) {
+            log.warn("Invalid status transition for activityId={}: current={}, action={}",
+                    activity.getId(), activity.getStatus(), action);
+            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
         }
-        return first.trim().toLowerCase(Locale.ROOT).equals(second.trim().toLowerCase(Locale.ROOT));
     }
 
-    private boolean isOverlapping(Activity first, Activity second) {
-        return first.getStartTime() != null
-                && first.getEndTime() != null
-                && second.getStartTime() != null
-                && second.getEndTime() != null
-                && first.getStartTime().isBefore(second.getEndTime())
-                && first.getEndTime().isAfter(second.getStartTime());
+    private String normalizeLocation(String location) {
+        if (location == null || location.isBlank()) {
+            return null;
+        }
+        return location.trim();
     }
 
     private void notifyOrganizer(Activity activity, String title, String content) {

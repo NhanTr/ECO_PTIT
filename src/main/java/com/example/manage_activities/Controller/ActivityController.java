@@ -7,6 +7,7 @@ import com.example.manage_activities.dto.request.CancelActivityRequest;
 import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.dto.response.ActivityFileResponse;
 import com.example.manage_activities.dto.response.ActivityResponse;
+import com.example.manage_activities.dto.response.ActivityReviewResponse;
 import com.example.manage_activities.dto.response.ClubStatisticsResponse;
 import com.example.manage_activities.service.ActivityService;
 import jakarta.validation.Valid;
@@ -90,7 +91,7 @@ public class ActivityController {
      */
     @PatchMapping("/{id}/submit")
     @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
-    public ResponseEntity<ActivityResponse> submitForReview(@PathVariable String id) {
+    public ResponseEntity<ActivityReviewResponse> submitForReview(@PathVariable String id) {
         log.info("Submit activity for review request received for ID: {}", id);
         return ResponseEntity.ok(activityService.submitForReview(id));
     }
