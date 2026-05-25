@@ -1,5 +1,6 @@
 package com.example.manage_activities.Controller;
 
+import com.example.manage_activities.dto.request.AssignActivityRequest;
 import com.example.manage_activities.dto.request.RejectActivityRequest;
 import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.dto.response.ActivityResponse;
@@ -70,6 +71,21 @@ public class AdminActivityController {
     }
 
     /**
+     * Assign an activity to a manager/admin reviewer.
+     * PUT /api/admin/activities/{id}/assign
+     */
+    @PutMapping("/{id}/assign")
+    public APIResponse<ActivityResponse> assignActivity(
+            @PathVariable String id,
+            @Valid @RequestBody AssignActivityRequest request) {
+        log.info("Admin assign activity: {}, reviewerId: {}", id, request.getReviewerId());
+        return APIResponse.<ActivityResponse>builder()
+                .message("Da phan cong nguoi phu trach hoat dong")
+                .result(activityService.assignReviewer(id, request.getReviewerId()))
+                .build();
+    }
+
+    /**
      * Approve activity proposal (QLHĐ_QĐ 1).
      * PUT /api/admin/activities/{id}/approve
      */
@@ -107,6 +123,21 @@ public class AdminActivityController {
         return APIResponse.<ActivityResponse>builder()
                 .message("Da duyet yeu cau huy hoat dong")
                 .result(activityService.approveCancelRequest(id))
+                .build();
+    }
+
+    /**
+     * Reject club cancellation request.
+     * PUT /api/admin/activities/{id}/reject-cancel
+     */
+    @PutMapping("/{id}/reject-cancel")
+    public APIResponse<ActivityResponse> rejectCancelRequest(
+            @PathVariable String id,
+            @Valid @RequestBody RejectActivityRequest request) {
+        log.info("Admin reject cancel request for activity: {}, reason: {}", id, request.getRejectReason());
+        return APIResponse.<ActivityResponse>builder()
+                .message("Da tu choi yeu cau huy hoat dong")
+                .result(activityService.rejectCancelRequest(id, request.getRejectReason()))
                 .build();
     }
 }
