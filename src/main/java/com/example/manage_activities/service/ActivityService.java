@@ -13,9 +13,11 @@ import com.example.manage_activities.entity.Activity;
 import com.example.manage_activities.entity.ActivityFile;
 import com.example.manage_activities.entity.Attendance;
 import com.example.manage_activities.entity.Registration;
+import com.example.manage_activities.entity.User;
 import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.enums.RegistrationStatus;
 import com.example.manage_activities.enums.ReportStatus;
+import com.example.manage_activities.enums.Roles;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.ActivityMapper;
@@ -23,6 +25,7 @@ import com.example.manage_activities.repository.ActivityFileRepository;
 import com.example.manage_activities.repository.ActivityRepository;
 import com.example.manage_activities.repository.AttendanceRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
+import com.example.manage_activities.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -67,6 +70,7 @@ public class ActivityService {
     RegistrationRepository registrationRepository;
     ActivityFileRepository activityFileRepository;
     AttendanceRepository attendanceRepository;
+    UserRepository userRepository;
     NotificationService notificationService;
     SystemConfigService systemConfigService;
     SystemLogService systemLogService;
@@ -315,6 +319,32 @@ public class ActivityService {
                 .activity(activity)
                 .scheduleConflicts(getScheduleConflicts(id))
                 .build();
+    }
+
+    @Transactional
+    public ActivityResponse assignReviewer(String id, String reviewerId) {
+        Activity activity = getActivityEntity(id);
+        User reviewer = userRepository.findById(reviewerId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        Roles reviewerRole = Roles.fromId(reviewer.getRoleId());
+        if (reviewerRole != Roles.ADMIN && reviewerRole != Roles.MANAGER) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+        if (!"active".equalsIgnoreCase(reviewer.getStatus())) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        String oldReviewerId = activity.getReviewerId();
+        activity.setReviewerId(reviewerId);
+        Activity savedActivity = activityRepository.save(activity);
+        notifyOrganizer(savedActivity,
+                "Hoat dong da duoc phan cong nguoi duyet",
+                "Hoat dong \"" + savedActivity.getTitle() + "\" da duoc phan cong nguoi phu trach kiem duyet.");
+        systemLogService.logAction(getCurrentUserId(), "ASSIGN_ACTIVITY_REVIEWER", "activities",
+                "activityId=" + id + ", reviewerId=" + oldReviewerId,
+                "activityId=" + id + ", reviewerId=" + reviewerId);
+        return activityMapper.toDTO(savedActivity);
     }
 
     @Transactional
