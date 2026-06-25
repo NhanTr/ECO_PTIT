@@ -2,6 +2,7 @@ package com.example.manage_activities.exception;
 
 import com.example.manage_activities.dto.response.APIResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,6 +12,18 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GlobalExceptionHandler {
     
+    @ExceptionHandler(value = AccessDeniedException.class)
+    public ResponseEntity<APIResponse<?>> handleAccessDeniedException(AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        ErrorCode errorCode = ErrorCode.UNAUTHORIZED;
+        return ResponseEntity
+                .status(errorCode.getHttpStatus())
+                .body(APIResponse.builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode.getMessage())
+                        .build());
+    }
+
     @ExceptionHandler(value = AppException.class)
     public ResponseEntity<APIResponse<?>> handleAppException(AppException ex) {
         ErrorCode errorCode = ex.getErrorCode();

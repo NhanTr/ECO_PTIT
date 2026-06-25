@@ -1,6 +1,8 @@
 package com.example.manage_activities.service;
 
+import com.example.manage_activities.dto.request.SystemConfigBulkUpdateRequest;
 import com.example.manage_activities.dto.request.SystemConfigRequest;
+import com.example.manage_activities.dto.request.SystemConfigUpdateItem;
 import com.example.manage_activities.dto.response.SystemConfigResponse;
 import com.example.manage_activities.entity.SystemConfig;
 import com.example.manage_activities.exception.AppException;
@@ -51,6 +53,19 @@ public class SystemConfigService {
         return systemConfigRepository.findById(key)
                 .map(this::toResponse)
                 .orElseThrow(() -> new AppException(ErrorCode.BAD_REQUEST));
+    }
+
+    @Transactional
+    public List<SystemConfigResponse> updateConfigs(SystemConfigBulkUpdateRequest request) {
+        return request.getConfigs().stream()
+                .map(item -> updateConfig(
+                        item.getKey(),
+                        SystemConfigRequest.builder()
+                                .value(item.getValue())
+                                .valueType(item.getValueType())
+                                .description(item.getDescription())
+                                .build()))
+                .toList();
     }
 
     @Transactional

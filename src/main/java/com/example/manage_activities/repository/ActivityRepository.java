@@ -2,6 +2,7 @@ package com.example.manage_activities.repository;
 
 import com.example.manage_activities.entity.Activity;
 import com.example.manage_activities.enums.ActivityStatus;
+import com.example.manage_activities.repository.projection.ActivityStatusCountProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -39,20 +40,28 @@ public interface ActivityRepository extends JpaRepository<Activity, String> {
             @Param("toTime") LocalDateTime toTime,
             Pageable pageable);
 
+    /**
+     * Finds activities in approved/ongoing lifecycle states that share the same room (location)
+     * and have an overlapping time window with the given activity.
+     */
     @Query("""
             SELECT a FROM Activity a
-            WHERE a.status = :status
+            WHERE a.status IN :statuses
               AND a.id <> :activityId
+              AND a.location IS NOT NULL
+              AND TRIM(a.location) <> ''
               AND a.startTime IS NOT NULL
               AND a.endTime IS NOT NULL
               AND :startTime IS NOT NULL
               AND :endTime IS NOT NULL
               AND a.startTime < :endTime
               AND a.endTime > :startTime
+              AND LOWER(TRIM(a.location)) = LOWER(TRIM(:location))
             """)
-    List<Activity> findApprovedOverlappingActivities(
+    List<Activity> findScheduleConflicts(
             @Param("activityId") String activityId,
-            @Param("status") ActivityStatus status,
+            @Param("statuses") Collection<ActivityStatus> statuses,
+            @Param("location") String location,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
 
@@ -100,4 +109,25 @@ public interface ActivityRepository extends JpaRepository<Activity, String> {
             @Param("now") LocalDateTime now);
 
     boolean existsById(String id);
+
+    @Query("""
+            SELECT a FROM Activity a
+            WHERE (:fromTime IS NULL OR a.startTime >= :fromTime)
+              AND (:toTime IS NULL OR a.startTime <= :toTime)
+            ORDER BY a.startTime ASC, a.title ASC
+            """)
+    List<Activity> findForStatisticsReport(
+            @Param("fromTime") LocalDateTime fromTime,
+            @Param("toTime") LocalDateTime toTime);
+
+    @Query("""
+            SELECT a.status AS status, COUNT(a) AS count
+            FROM Activity a
+            WHERE (:fromTime IS NULL OR a.startTime >= :fromTime)
+              AND (:toTime IS NULL OR a.startTime <= :toTime)
+            GROUP BY a.status
+            """)
+    List<ActivityStatusCountProjection> countActivitiesGroupByStatus(
+            @Param("fromTime") LocalDateTime fromTime,
+            @Param("toTime") LocalDateTime toTime);
 }

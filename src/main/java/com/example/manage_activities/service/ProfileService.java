@@ -106,6 +106,7 @@ public class ProfileService {
                 .userId(profile.getUserId())
                 .fullName(profile.getFullName())
                 .studentCode(profile.getStudentCode())
+                .className(profile.getClassName())
                 .department(profile.getDepartment())
                 .phone(profile.getPhone())
                 .avatarUrl(profile.getAvatarUrl())

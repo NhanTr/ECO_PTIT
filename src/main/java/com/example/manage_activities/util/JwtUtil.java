@@ -22,7 +22,7 @@ public class JwtUtil {
     @Value("${jwt.secret-key}")
     private String secretKey;
 
-    @Value("${jwt.valid-duration:3600}")
+    @Value("${jwt.valid-duration:900}")
     private long validDuration;
 
     @Value("${jwt.refresh-duration:604800}")
@@ -72,17 +72,9 @@ public class JwtUtil {
         }
     }
 
-    /**
-     * Build scopes string from user roles
-     */
+    /** JWT scope: 1=ADMIN, 2=MANAGER, 3=ORGANIZER, 4=STUDENT — see {@link Roles}. */
     private String buildScopes(User user) {
-        // Map roleId to role name using Roles enum: 1=ADMIN, 2=ORGANIZER, 3=MANAGER, 4=STUDENT
-        try {
-            return Roles.getNameById(user.getRoleId());
-        } catch (Exception e) {
-            log.warn("Error getting role name for roleId: {}, defaulting to STUDENT", user.getRoleId(), e);
-            return "STUDENT";
-        }
+        return Roles.fromId(user.getRoleId()).name();
     }
 
     /**

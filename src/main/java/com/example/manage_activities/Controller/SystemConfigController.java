@@ -1,5 +1,6 @@
 package com.example.manage_activities.Controller;
 
+import com.example.manage_activities.dto.request.SystemConfigBulkUpdateRequest;
 import com.example.manage_activities.dto.request.SystemConfigRequest;
 import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.dto.response.SystemConfigResponse;
@@ -22,20 +23,28 @@ import java.util.List;
 @RequestMapping("/api/admin/system-configs")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@PreAuthorize("hasRole('ADMIN')")
 public class SystemConfigController {
 
     SystemConfigService systemConfigService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public APIResponse<List<SystemConfigResponse>> getAllConfigs() {
         return APIResponse.<List<SystemConfigResponse>>builder()
                 .result(systemConfigService.getAllConfigs())
                 .build();
     }
 
+    @PutMapping
+    public APIResponse<List<SystemConfigResponse>> updateConfigs(
+            @Valid @RequestBody SystemConfigBulkUpdateRequest request) {
+        return APIResponse.<List<SystemConfigResponse>>builder()
+                .message("Da cap nhat cau hinh he thong")
+                .result(systemConfigService.updateConfigs(request))
+                .build();
+    }
+
     @GetMapping("/{key}")
-    @PreAuthorize("hasRole('ADMIN')")
     public APIResponse<SystemConfigResponse> getConfig(@PathVariable String key) {
         return APIResponse.<SystemConfigResponse>builder()
                 .result(systemConfigService.getConfig(key))
@@ -43,7 +52,6 @@ public class SystemConfigController {
     }
 
     @PutMapping("/{key}")
-    @PreAuthorize("hasRole('ADMIN')")
     public APIResponse<SystemConfigResponse> updateConfig(
             @PathVariable String key,
             @Valid @RequestBody SystemConfigRequest request) {

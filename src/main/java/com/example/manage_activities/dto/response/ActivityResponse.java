@@ -33,6 +33,7 @@ public class ActivityResponse {
     Integer currentParticipants;
     String status;
     String cancelReason;
+    String rejectReason;
     String organizerId;
     String reviewerId;
     LocalDateTime createdAt;

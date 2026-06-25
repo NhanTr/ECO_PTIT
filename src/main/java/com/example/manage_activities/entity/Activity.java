@@ -60,6 +60,9 @@ public class Activity {
     @Column(columnDefinition = "TEXT")
     String cancelReason;
 
+    @Column(name = "reject_reason", columnDefinition = "TEXT")
+    String rejectReason;
+
     @Column(nullable = false, updatable = false)
     LocalDateTime createdAt;
 }

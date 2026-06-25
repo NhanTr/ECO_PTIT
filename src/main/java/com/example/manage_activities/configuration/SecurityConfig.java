@@ -38,12 +38,20 @@ public class SecurityConfig {
                 .requestMatchers("/auth/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/activities/**").permitAll()
                 
-                // User endpoints - ADMIN only
-            .requestMatchers(HttpMethod.GET, "/api/v1/users").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.GET, "/api/v1/users/**").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.POST, "/api/v1/users").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").hasRole("ADMIN")
-            .requestMatchers(HttpMethod.DELETE, "/api/v1/users/**").hasRole("ADMIN")
+                // Self-service user endpoints
+            .requestMatchers(HttpMethod.POST, "/api/v1/users/change-password").authenticated()
+
+                // Admin Module 1 - user & role management
+            .requestMatchers("/api/admin/users/**").hasAnyRole("ADMIN", "MANAGER")
+            .requestMatchers("/api/admin/roles/**").hasAnyRole("ADMIN", "MANAGER")
+            .requestMatchers("/api/admin/activities/**").hasAnyRole("ADMIN", "MANAGER")
+
+                // Module 4 — system administration
+            .requestMatchers("/api/admin/notifications/**").hasAnyRole("ADMIN", "MANAGER")
+            .requestMatchers("/api/admin/backups/**").hasRole("ADMIN")
+            .requestMatchers("/api/admin/system-configs/**").hasRole("ADMIN")
+            .requestMatchers("/api/admin/system-logs/**").hasRole("ADMIN")
+            .requestMatchers("/api/admin/statistics/**").hasAnyRole("ADMIN", "MANAGER")
                 
                 // Activity endpoints - ORGANIZER, ADMIN can create/edit
             .requestMatchers(HttpMethod.POST, "/api/v1/activities").hasAnyRole("ORGANIZER", "ADMIN")

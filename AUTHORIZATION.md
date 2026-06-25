@@ -12,12 +12,14 @@ Dự án sử dụng **Role-Based Access Control (RBAC)** với JWT tokens để
 
 ```java
 public enum Roles {
-    ADMIN,        // ID: 1 - Quản trị viên
-    ORGANIZER,    // ID: 2 - Người tổ chức hoạt động
-    MANAGER,      // ID: 3 - Quản lý hoạt động
-    STUDENT       // ID: 4 - Sinh viên tham gia hoạt động
+    ADMIN,        // ID: 1 - Quản trị hệ thống
+    MANAGER,      // ID: 2 - Giảng viên / Quản lý hoạt động
+    ORGANIZER,    // ID: 3 - BTC/CLB
+    STUDENT       // ID: 4 - Sinh viên
 }
 ```
+
+**Access token TTL:** mặc định **900 giây (15 phút)** (`jwt.valid-duration`) để giảm cửa sổ JWT mang role cũ sau khi admin đổi quyền. Refresh token vẫn dài hơn (7 ngày).
 
 ---
 

@@ -31,6 +31,10 @@ public class Profile {
     String studentCode;
 
     String department;
+
+    @Column(name = "class_name")
+    String className;
+
     String phone;
 
     @Column(name = "avatar_url")

@@ -1,0 +1,224 @@
+
+Bộ phận: Quản lý &amp; Quản trị hệ thống   Mã số: QLHĐ
+ 
+STT
+Công việc
+Loại công việc
+Quy định/Công thức liên quan
+Biểu mẫu liên quan
+Ghi chú
+1
+Lọc và tìm kiếm hoạt động theo trạng thái vòng đời
+Tra cứu
+ 
+ 
+ 
+2
+Duyệt yêu cầu tổ chức hoạt động
+Lưu trữ
+QLHĐ_QĐ 1
+ 
+Gửi thông báo tự động đến BTC/CLB sau khi duyệt/từ chối
+3
+Duyệt yêu cầu hủy hoạt động
+Lưu trữ
+ 
+ 
+ 
+4
+Quản lý thông tin hoạt động
+Lưu trữ, Tra cứu
+ 
+ 
+ 
+5
+Quản lý lịch hoạt động và kiểm tra trùng lịch
+Tính toán, Tra cứu
+QLHĐ_QĐ 2
+ 
+ 
+6
+Gửi thông báo thủ công cho sinh viên/CLB
+Kết xuất
+ 
+QLHĐ_BM 1
+ 
+7
+Phân công hoạt động
+Lưu trữ
+ 
+ 
+ 
+8
+Thống kê tổng số hoạt động
+Tổng hợp, thống kê
+ 
+QLHĐ_BM 2
+ 
+9
+Thống kê số lượng sinh viên tham gia và điểm hoạt động
+Tổng hợp, thống kê
+ 
+QLHĐ_BM 3
+ 
+10
+Tạo và quản lý tài khoản người dùng
+Lưu trữ
+ 
+ 
+Bao gồm sinh viên, BTC/CLB
+11
+Phân quyền người dùng
+Lưu trữ
+QLHĐ_QĐ 3
+ 
+ 
+12
+Quản lý cấu hình hệ thống
+Lưu trữ
+ 
+ 
+ 
+13
+Sao lưu và phục hồi dữ liệu
+Lưu trữ
+QLHĐ_QĐ 4
+ 
+Chỉ quản trị hệ thống mới được thực hiện
+14
+Theo dõi lịch sử thao tác hệ thống (System logs)
+Tra cứu
+ 
+ 
+ 
+Bảng yêu cầu chức năng nghiệp vụ - Quản lý hoạt động
+ 
+Bảng Quy định/Công thức liên quan - Quản lý hoạt động
+ 
+STT
+Mã số
+Tên Quy định/Công thức
+Mô tả chi tiết
+Ghi chú
+1
+QLHĐ_QĐ 1
+Quy định duyệt hoạt động
+Quản lý xem xét thông tin hoạt động do BTC/CLB đề xuất.
+Duyệt: chuyển trạng thái sang Đã duyệt, hệ thống gửi thông báo cho BTC/CLB.
+Từ chối: kèm lý do, hệ thống gửi thông báo cho BTC/CLB.
+ 
+2
+QLHĐ_QĐ 2
+Quy định kiểm tra trùng lịch hoạt động
+Hệ thống tự động cảnh báo khi có hoạt động mới trùng phòng hoặc trùng khung giờ với hoạt động đã được duyệt.
+ 
+3
+QLHĐ_QĐ 3
+Quy định phân quyền người dùng
+Quản lý &amp; Quản trị hệ thống: toàn quyền.
+Giảng viên/Quản lý hoạt động: duyệt hoạt động, quản lý tài khoản, thống kê.
+BTC/CLB: quản lý hoạt động, điểm danh, báo cáo.
+Sinh viên: xem, đăng ký, theo dõi cá nhân.
+ 
+4
+QLHĐ_QĐ 4
+Quy định sao lưu và phục hồi dữ liệu
+Chỉ tài khoản quản lý hệ thống mới được thực hiện sao lưu và phục hồi. Sao lưu định kỳ tự động hoặc thủ công theo yêu cầu.
+ 
+ 
+Biểu mẫu liên quan - Quản lý hoạt động
+ 
+QLHĐ_BM 1: MẪU THÔNG BÁO GỬI SINH VIÊN/CLB
+ 
+Kính gửi: ..................................................................................................
+Nội dung thông báo: ...................................................................................
+...................................................................................................
+Thời gian hiệu lực: .............................
+ 
+Ngày ..... tháng ..... năm .....                                Người gửi thông báo
+ 
+QLHĐ_BM 2: BÁO CÁO THỐNG KÊ HOẠT ĐỘNG
+ 
+Từ ngày: ....................... Đến ngày: .......................
+ 
+STT
+Tên hoạt động
+Ban tổ chức
+Số SV đăng ký
+Số SV tham gia
+Trạng thái
+1
+ 
+ 
+ 
+ 
+ 
+2
+ 
+ 
+ 
+ 
+ 
+ 
+Ngày lập báo cáo: ........................... Người lập: .............................
+ 
+QLHĐ_BM 3: BÁO CÁO ĐIỂM HOẠT ĐỘNG SINH VIÊN
+ 
+Từ ngày: ....................... Đến ngày: .......................
+Khoa/Lớp (nếu lọc): ......................
+ 
+STT
+Mã sinh viên
+Họ và tên
+Lớp
+Số hoạt động
+Tổng điểm
+1
+ 
+ 
+ 
+ 
+ 
+2
+ 
+ 
+ 
+ 
+ 
+ 
+Ngày lập báo cáo: ........................... Người lập: .............................
+ 
+III. XÁC ĐỊNH YÊU CẦU CHỨC NĂNG HỆ THỐNG
+ 
+STT
+Nội dung
+Mô tả chi tiết
+Ghi chú
+1
+Phân quyền sử dụng
+- Quản lý &amp; Quản trị hệ thống: toàn quyền trên tất cả chức năng.
+- Giảng viên/Quản lý hoạt động: duyệt hoạt động, quản lý tài khoản, xem thống kê.
+- BTC/CLB: quản lý hoạt động, điểm danh, báo cáo.
+- Sinh viên: xem hoạt động, đăng ký, theo dõi điểm cá nhân.
+ 
+2
+Theo dõi lịch sử thao tác (System Logs)
+Hệ thống ghi lại mọi thao tác của người dùng gồm: người thực hiện, hành động, bảng dữ liệu bị ảnh hưởng, giá trị cũ và mới, thời gian thực hiện.
+ 
+3
+Gửi thông báo tự động
+Hệ thống tự động gửi thông báo đến người dùng liên quan khi có sự kiện thay đổi trạng thái hoạt động, đăng ký thành công, hoặc có điểm mới.
+ 
+4
+Xác thực và bảo mật đăng nhập
+Người dùng đăng nhập bằng tài khoản và mật khẩu. Hệ thống sử dụng cơ chế xác thực bảo mật, phân biệt phiên làm việc theo vai trò.
+ 
+5
+Sao lưu và phục hồi dữ liệu
+Hỗ trợ sao lưu định kỳ dữ liệu hệ thống và phục hồi khi có sự cố. Chỉ quản lý hệ thống mới có quyền thực hiện.
+ 
+6
+Kiểm tra trùng lịch hoạt động tự động
+Khi BTC/CLB đăng ký hoạt động, hệ thống tự động kiểm tra và cảnh báo nếu trùng phòng hoặc khung giờ với hoạt động đã được duyệt.
+ 
+Bảng yêu cầu chức năng hệ thống

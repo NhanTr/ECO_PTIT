@@ -15,16 +15,14 @@ import java.time.LocalDateTime;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserResponse {
-    
-    private String id;
-    
-    private String username;
-    
-    private String email;
-    
-    private Integer roleId;
-    
-    private String status;
-    
-    private LocalDateTime createdAt;
+
+    String id;
+    String username;
+    String email;
+    Integer roleId;
+    String roleName;
+    String roleDisplayName;
+    String status;
+    LocalDateTime createdAt;
+    ProfileResponse profile;
 }

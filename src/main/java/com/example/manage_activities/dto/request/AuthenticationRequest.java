@@ -1,5 +1,4 @@
 package com.example.manage_activities.dto.request;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

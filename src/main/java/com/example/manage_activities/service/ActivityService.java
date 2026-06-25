@@ -13,9 +13,11 @@ import com.example.manage_activities.entity.Activity;
 import com.example.manage_activities.entity.ActivityFile;
 import com.example.manage_activities.entity.Attendance;
 import com.example.manage_activities.entity.Registration;
+import com.example.manage_activities.entity.User;
 import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.enums.RegistrationStatus;
 import com.example.manage_activities.enums.ReportStatus;
+import com.example.manage_activities.enums.Roles;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.ActivityMapper;
@@ -23,6 +25,7 @@ import com.example.manage_activities.repository.ActivityFileRepository;
 import com.example.manage_activities.repository.ActivityRepository;
 import com.example.manage_activities.repository.AttendanceRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
+import com.example.manage_activities.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -39,7 +42,6 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -59,12 +61,19 @@ public class ActivityService {
             List.of(RegistrationStatus.PENDING, RegistrationStatus.APPROVED);
     private static final List<ActivityStatus> AUTO_CLOSE_ACTIVITY_STATUSES =
             List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
+    private static final List<ActivityStatus> SCHEDULE_CONFLICT_STATUSES =
+            List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
+    private static final List<ActivityStatus> APPROVABLE_STATUSES =
+            List.of(ActivityStatus.PENDING, ActivityStatus.REVIEWING);
+    private static final List<ActivityStatus> REJECTABLE_STATUSES =
+            List.of(ActivityStatus.PENDING, ActivityStatus.REVIEWING);
 
     ActivityRepository activityRepository;
     ActivityMapper activityMapper;
     RegistrationRepository registrationRepository;
     ActivityFileRepository activityFileRepository;
     AttendanceRepository attendanceRepository;
+    UserRepository userRepository;
     NotificationService notificationService;
     SystemConfigService systemConfigService;
     SystemLogService systemLogService;
@@ -218,7 +227,7 @@ public class ActivityService {
     }
 
     @Transactional
-    public ActivityResponse submitForReview(String id) {
+    public ActivityReviewResponse submitForReview(String id) {
         Activity activity = getActivityEntity(id);
         ensureCanManageActivity(activity);
 
@@ -228,10 +237,18 @@ public class ActivityService {
 
         activity.setStatus(ActivityStatus.PENDING);
         Activity savedActivity = activityRepository.save(activity);
+        List<ActivityScheduleConflictResponse> scheduleConflicts = findScheduleConflicts(savedActivity);
+        if (!scheduleConflicts.isEmpty()) {
+            log.warn("Schedule conflict warning for activityId={}: {} conflicting activity(ies)",
+                    id, scheduleConflicts.size());
+        }
         systemLogService.logAction(getCurrentUserId(), "SUBMIT_ACTIVITY", "activities",
                 "activityId=" + id + ", status=Draft",
                 "activityId=" + id + ", status=Pending");
-        return activityMapper.toDTO(savedActivity);
+        return ActivityReviewResponse.builder()
+                .activity(activityMapper.toDTO(savedActivity))
+                .scheduleConflicts(scheduleConflicts)
+                .build();
     }
 
     @Transactional
@@ -329,6 +346,32 @@ public class ActivityService {
     }
 
     @Transactional
+    public ActivityResponse assignReviewer(String id, String reviewerId) {
+        Activity activity = getActivityEntity(id);
+        User reviewer = userRepository.findById(reviewerId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+
+        Roles reviewerRole = Roles.fromId(reviewer.getRoleId());
+        if (reviewerRole != Roles.ADMIN && reviewerRole != Roles.MANAGER) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+        if (!"active".equalsIgnoreCase(reviewer.getStatus())) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        String oldReviewerId = activity.getReviewerId();
+        activity.setReviewerId(reviewerId);
+        Activity savedActivity = activityRepository.save(activity);
+        notifyOrganizer(savedActivity,
+                "Hoat dong da duoc phan cong nguoi duyet",
+                "Hoat dong \"" + savedActivity.getTitle() + "\" da duoc phan cong nguoi phu trach kiem duyet.");
+        systemLogService.logAction(getCurrentUserId(), "ASSIGN_ACTIVITY_REVIEWER", "activities",
+                "activityId=" + id + ", reviewerId=" + oldReviewerId,
+                "activityId=" + id + ", reviewerId=" + reviewerId);
+        return activityMapper.toDTO(savedActivity);
+    }
+
+    @Transactional
     public ActivityResponse approveActivity(String id) {
         log.info("Approving activity with ID: {}", id);
 
@@ -337,6 +380,7 @@ public class ActivityService {
         if (ActivityStatus.APPROVED.equals(activity.getStatus())) {
             throw new AppException(ErrorCode.ACTIVITY_ALREADY_APPROVED);
         }
+        ensureActivityStatusIn(activity, APPROVABLE_STATUSES, "approve");
 
         String reviewerId = getCurrentUserId();
         activity.setStatus(ActivityStatus.APPROVED);
@@ -353,38 +397,38 @@ public class ActivityService {
     }
 
     /**
-     * Reject activity so it can be publicly available.
+     * Reject activity proposal (QLHĐ_QĐ 1).
      */
     @Transactional
-    public ActivityResponse rejectActivity(String id, String reason) {
-        log.info("Rejecting activity with ID: {}, reason: {}", id, reason);
+    public ActivityResponse rejectActivity(String id, String rejectReason) {
+        log.info("Rejecting activity with ID: {}, reason: {}", id, rejectReason);
 
         Activity activity = getActivityEntity(id);
 
         if (ActivityStatus.REJECTED.equals(activity.getStatus())) {
             throw new AppException(ErrorCode.ACTIVITY_ALREADY_REJECTED);
         }
+        ensureActivityStatusIn(activity, REJECTABLE_STATUSES, "reject");
 
         String reviewerId = getCurrentUserId();
+        activity.setRejectReason(rejectReason);
         activity.setStatus(ActivityStatus.REJECTED);
         activity.setReviewerId(reviewerId);
 
         Activity savedActivity = activityRepository.save(activity);
         notifyOrganizer(savedActivity,
                 "Hoat dong bi tu choi",
-                "Hoat dong \"" + savedActivity.getTitle() + "\" bi tu choi. Ly do: " + reason);
+                "Hoat dong \"" + savedActivity.getTitle() + "\" bi tu choi. Ly do: " + rejectReason);
         systemLogService.logAction(reviewerId, "REJECT_ACTIVITY", "activities",
                 "activityId=" + id,
-                "activityId=" + id + ", status=Rejected, reason=" + reason);
+                "activityId=" + id + ", status=Rejected, rejectReason=" + rejectReason);
         return activityMapper.toDTO(savedActivity);
     }
 
     @Transactional
     public ActivityResponse approveCancelRequest(String id) {
         Activity activity = getActivityEntity(id);
-        if (!ActivityStatus.REVIEWING.equals(activity.getStatus())) {
-            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
-        }
+        ensureActivityStatusIn(activity, List.of(ActivityStatus.REVIEWING), "approve-cancel");
 
         activity.setStatus(ActivityStatus.CANCELLED);
         activity.setReviewerId(getCurrentUserId());
@@ -401,9 +445,7 @@ public class ActivityService {
     @Transactional
     public ActivityResponse rejectCancelRequest(String id, String reason) {
         Activity activity = getActivityEntity(id);
-        if (!ActivityStatus.REVIEWING.equals(activity.getStatus())) {
-            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
-        }
+        ensureActivityStatusIn(activity, List.of(ActivityStatus.REVIEWING), "reject-cancel");
 
         activity.setStatus(ActivityStatus.APPROVED);
         activity.setReviewerId(getCurrentUserId());
@@ -670,50 +712,48 @@ public class ActivityService {
         if (activity.getStartTime() == null || activity.getEndTime() == null) {
             return List.of();
         }
+        String normalizedLocation = normalizeLocation(activity.getLocation());
+        if (normalizedLocation == null) {
+            return List.of();
+        }
 
-        return activityRepository.findApprovedOverlappingActivities(
+        return activityRepository.findScheduleConflicts(
                         activity.getId(),
-                        ActivityStatus.APPROVED,
+                        SCHEDULE_CONFLICT_STATUSES,
+                        normalizedLocation,
                         activity.getStartTime(),
                         activity.getEndTime())
                 .stream()
-                .map(conflict -> toScheduleConflictResponse(activity, conflict))
+                .map(conflict -> toScheduleConflictResponse(conflict))
                 .toList();
     }
 
-    private ActivityScheduleConflictResponse toScheduleConflictResponse(Activity activity, Activity conflict) {
-        boolean sameLocation = isSameLocation(activity.getLocation(), conflict.getLocation());
-        boolean overlappingTime = isOverlapping(activity, conflict);
-        String warning = sameLocation
-                ? "Trung phong va trung khung gio voi hoat dong da duyet"
-                : "Trung khung gio voi hoat dong da duyet";
-
+    private ActivityScheduleConflictResponse toScheduleConflictResponse(Activity conflict) {
         return ActivityScheduleConflictResponse.builder()
                 .activityId(conflict.getId())
                 .title(conflict.getTitle())
                 .location(conflict.getLocation())
                 .startTime(conflict.getStartTime())
                 .endTime(conflict.getEndTime())
-                .sameLocation(sameLocation)
-                .overlappingTime(overlappingTime)
-                .warning(warning)
+                .sameLocation(true)
+                .overlappingTime(true)
+                .warning("Trung phong va trung khung gio voi hoat dong da duyet hoac dang dien ra")
                 .build();
     }
 
-    private boolean isSameLocation(String first, String second) {
-        if (first == null || second == null) {
-            return false;
+    private void ensureActivityStatusIn(Activity activity, Collection<ActivityStatus> allowedStatuses, String action) {
+        if (!allowedStatuses.contains(activity.getStatus())) {
+            log.warn("Invalid status transition for activityId={}: current={}, action={}",
+                    activity.getId(), activity.getStatus(), action);
+            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
         }
-        return first.trim().toLowerCase(Locale.ROOT).equals(second.trim().toLowerCase(Locale.ROOT));
     }
 
-    private boolean isOverlapping(Activity first, Activity second) {
-        return first.getStartTime() != null
-                && first.getEndTime() != null
-                && second.getStartTime() != null
-                && second.getEndTime() != null
-                && first.getStartTime().isBefore(second.getEndTime())
-                && first.getEndTime().isAfter(second.getStartTime());
+    private String normalizeLocation(String location) {
+        if (location == null || location.isBlank()) {
+            return null;
+        }
+        return location.trim();
     }
 
     private void notifyOrganizer(Activity activity, String title, String content) {

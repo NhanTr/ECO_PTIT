@@ -23,6 +23,12 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * @deprecated Prefer {@link AdminActivityController} at {@code /api/admin/activities} for
+ * search, approve, reject, cancel approval, and schedule conflict checks (Module 2).
+ * Report and statistics endpoints remain here until migrated.
+ */
+@Deprecated
 @RestController
 @RequestMapping("/api/manager/activities")
 @RequiredArgsConstructor
@@ -35,7 +41,9 @@ public class ManagerActivityController {
     /**
      * Search/filter activities by lifecycle status.
      * GET /api/manager/activities?statuses=Pending&statuses=Approved&keyword=...
+     * @deprecated Use {@link AdminActivityController#searchActivities} — GET /api/admin/activities
      */
+    @Deprecated
     @GetMapping
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public APIResponse<Page<ActivityResponse>> searchActivities(
@@ -53,7 +61,9 @@ public class ManagerActivityController {
     /**
      * Approve activity to be publicly available.
      * Patch /api/manager/activities/{id}/approve
+     * @deprecated Use PUT /api/admin/activities/{id}/approve
      */
+    @Deprecated
     @PatchMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public ResponseEntity<APIResponse<ActivityReviewResponse>> approveActivity(@PathVariable String id) {
@@ -69,14 +79,16 @@ public class ManagerActivityController {
     /**
      * Reject activity.
      * Patch /api/manager/activities/{id}/reject
+     * @deprecated Use PUT /api/admin/activities/{id}/reject
      */
+    @Deprecated
     @PatchMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public ResponseEntity<APIResponse<Void>> rejectActivity(
             @PathVariable String id,
             @Valid @RequestBody RejectActivityRequest request) {
-        log.info("Reject activity request received for ID: {}, reason: {}", id, request.getReason());
-        activityService.rejectActivity(id, request.getReason());
+        log.info("Reject activity request received for ID: {}, reason: {}", id, request.getRejectReason());
+        activityService.rejectActivity(id, request.getRejectReason());
         return ResponseEntity.ok(APIResponse.<Void>builder()
                 .code(1000)
                 .message("Da tu choi")
@@ -86,7 +98,9 @@ public class ManagerActivityController {
     /**
      * Approve cancellation request.
      * PATCH /api/manager/activities/{id}/cancel-requests/approve
+     * @deprecated Use PUT /api/admin/activities/{id}/approve-cancel
      */
+    @Deprecated
     @PatchMapping("/{id}/cancel-requests/approve")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public ResponseEntity<APIResponse<ActivityResponse>> approveCancelRequest(@PathVariable String id) {
@@ -116,7 +130,9 @@ public class ManagerActivityController {
     /**
      * Check room/time conflicts against approved activities.
      * GET /api/manager/activities/{id}/schedule-conflicts
+     * @deprecated Use GET /api/admin/activities/{id}/schedule-conflicts
      */
+    @Deprecated
     @GetMapping("/{id}/schedule-conflicts")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public APIResponse<List<ActivityScheduleConflictResponse>> getScheduleConflicts(@PathVariable String id) {

@@ -17,6 +17,7 @@ public class ProfileResponse {
     String userId;
     String fullName;
     String studentCode;
+    String className;
     String department;
     String phone;
     String avatarUrl;

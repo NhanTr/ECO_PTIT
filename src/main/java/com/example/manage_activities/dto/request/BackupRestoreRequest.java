@@ -14,6 +14,10 @@ import lombok.experimental.FieldDefaults;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class BackupRestoreRequest {
-    @NotBlank(message = "Confirmation must not be blank")
+
+    @NotBlank(message = "BAD_REQUEST")
+    String fileName;
+
+    @NotBlank(message = "BAD_REQUEST")
     String confirmation;
 }

@@ -41,7 +41,10 @@ public enum ErrorCode {
     ATTENDANCE_NOT_FOUND(1032, "Attendance not found", HttpStatus.NOT_FOUND),
     ACTIVITY_REPORT_NOT_ALLOWED(1033, "Report cannot be submitted for this activity", HttpStatus.BAD_REQUEST),
     ACTIVITY_FILE_NOT_FOUND(1034, "Activity file not found", HttpStatus.NOT_FOUND),
-    ACTIVITY_REPORT_ALREADY_REVIEWED(1035, "Report has already been reviewed", HttpStatus.BAD_REQUEST);
+    ACTIVITY_REPORT_ALREADY_REVIEWED(1035, "Report has already been reviewed", HttpStatus.BAD_REQUEST),
+    ROLE_ASSIGNMENT_FORBIDDEN(1036, "You are not allowed to perform this role assignment", HttpStatus.FORBIDDEN),
+    CANNOT_MODIFY_ADMIN_USER(1037, "You cannot modify an administrator account", HttpStatus.FORBIDDEN),
+    USER_IDENTITY_REQUIRED(1038, "Identity information is required for this account type", HttpStatus.BAD_REQUEST);
 
 
     private int code;
