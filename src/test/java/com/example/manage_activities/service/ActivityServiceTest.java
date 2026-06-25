@@ -100,6 +100,37 @@ class ActivityServiceTest {
     }
 
     @Test
+    void startDueActivities_shouldStartApprovedActivitiesThatReachedStartTime() {
+        LocalDateTime now = LocalDateTime.of(2026, 5, 17, 15, 30);
+        when(activityRepository.startDueActivities(
+                eq(ActivityStatus.APPROVED),
+                eq(ActivityStatus.ONGOING),
+                eq(now))).thenReturn(3);
+
+        int startedCount = activityService.startDueActivities(now);
+
+        assertEquals(3, startedCount);
+        verify(activityRepository).startDueActivities(
+                eq(ActivityStatus.APPROVED),
+                eq(ActivityStatus.ONGOING),
+                eq(now));
+    }
+
+    @Test
+    void closeExpiredActivities_shouldCloseApprovedAndOngoingActivities() {
+        LocalDateTime now = LocalDateTime.of(2026, 5, 17, 15, 30);
+        when(activityRepository.closeExpiredActivities(
+                any(),
+                eq(ActivityStatus.CLOSED),
+                eq(now))).thenReturn(2);
+
+        int closedCount = activityService.closeExpiredActivities(now);
+
+        assertEquals(2, closedCount);
+        verify(activityRepository).closeExpiredActivities(
+                eq(List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING)),
+                eq(ActivityStatus.CLOSED),
+                eq(now));
     void approveActivity_shouldThrowWhenStatusIsCancelled() {
         Activity activity = Activity.builder()
                 .id("act1234567")

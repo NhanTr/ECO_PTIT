@@ -1,7 +1,6 @@
 package com.example.manage_activities.Controller;
 
 import com.example.manage_activities.dto.request.RejectActivityRequest;
-import com.example.manage_activities.dto.request.ActivityUpdateRequest;
 import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.dto.response.ActivityFileResponse;
 import com.example.manage_activities.dto.response.ActivityReviewResponse;
@@ -57,22 +56,6 @@ public class ManagerActivityController {
         return APIResponse.<Page<ActivityResponse>>builder()
                 .result(activityService.searchActivitiesForManager(statuses, keyword, location, fromTime, toTime, pageable))
                 .build();
-    }
-
-    /**
-     * Manager-level update for activity information.
-     * PUT /api/manager/activities/{id}
-     */
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
-    public ResponseEntity<APIResponse<ActivityResponse>> updateActivity(
-            @PathVariable String id,
-            @Valid @RequestBody ActivityUpdateRequest request) {
-        return ResponseEntity.ok(APIResponse.<ActivityResponse>builder()
-                .code(1000)
-                .message("Da cap nhat hoat dong")
-                .result(activityService.managerUpdateActivity(id, request))
-                .build());
     }
 
     /**

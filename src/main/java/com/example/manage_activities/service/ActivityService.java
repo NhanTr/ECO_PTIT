@@ -32,6 +32,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -58,6 +59,8 @@ public class ActivityService {
             List.of(ActivityStatus.DRAFT, ActivityStatus.PENDING);
     private static final List<RegistrationStatus> COUNTED_REGISTRATION_STATUSES =
             List.of(RegistrationStatus.PENDING, RegistrationStatus.APPROVED);
+    private static final List<ActivityStatus> AUTO_CLOSE_ACTIVITY_STATUSES =
+            List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
     private static final List<ActivityStatus> SCHEDULE_CONFLICT_STATUSES =
             List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
     private static final List<ActivityStatus> APPROVABLE_STATUSES =
@@ -74,6 +77,38 @@ public class ActivityService {
     NotificationService notificationService;
     SystemConfigService systemConfigService;
     SystemLogService systemLogService;
+
+    @Scheduled(fixedDelayString = "${activity.lifecycle.start-due.fixed-delay-ms:60000}")
+    @Transactional
+    public void startDueActivities() {
+        int startedCount = startDueActivities(LocalDateTime.now());
+        if (startedCount > 0) {
+            log.info("Auto-started {} due activities", startedCount);
+        }
+    }
+
+    int startDueActivities(LocalDateTime now) {
+        return activityRepository.startDueActivities(
+                ActivityStatus.APPROVED,
+                ActivityStatus.ONGOING,
+                now);
+    }
+
+    @Scheduled(fixedDelayString = "${activity.lifecycle.close-expired.fixed-delay-ms:60000}")
+    @Transactional
+    public void closeExpiredActivities() {
+        int closedCount = closeExpiredActivities(LocalDateTime.now());
+        if (closedCount > 0) {
+            log.info("Auto-closed {} expired activities", closedCount);
+        }
+    }
+
+    int closeExpiredActivities(LocalDateTime now) {
+        return activityRepository.closeExpiredActivities(
+                AUTO_CLOSE_ACTIVITY_STATUSES,
+                ActivityStatus.CLOSED,
+                now);
+    }
 
     /**
      * Create a new activity
@@ -172,17 +207,6 @@ public class ActivityService {
         applyUpdate(activity, request);
         Activity savedActivity = activityRepository.save(activity);
         systemLogService.logAction(getCurrentUserId(), "UPDATE_ACTIVITY", "activities",
-                "activityId=" + id,
-                "activityId=" + id + ", status=" + savedActivity.getStatus().getValue());
-        return activityMapper.toDTO(savedActivity);
-    }
-
-    @Transactional
-    public ActivityResponse managerUpdateActivity(String id, ActivityUpdateRequest request) {
-        Activity activity = getActivityEntity(id);
-        applyUpdate(activity, request);
-        Activity savedActivity = activityRepository.save(activity);
-        systemLogService.logAction(getCurrentUserId(), "MANAGER_UPDATE_ACTIVITY", "activities",
                 "activityId=" + id,
                 "activityId=" + id + ", status=" + savedActivity.getStatus().getValue());
         return activityMapper.toDTO(savedActivity);

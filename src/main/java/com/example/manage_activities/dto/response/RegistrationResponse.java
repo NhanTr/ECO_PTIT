@@ -24,4 +24,8 @@ public class RegistrationResponse {
     LocalDateTime approvedAt;
     LocalDateTime cancelledAt;
     LocalDateTime createdAt;
+    String attendanceId;
+    Boolean isPresent;
+    LocalDateTime checkInTime;
+    Integer earnedPoints;
 }
