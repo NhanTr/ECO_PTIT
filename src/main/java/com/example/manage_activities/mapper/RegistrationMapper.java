@@ -19,6 +19,10 @@ public interface RegistrationMapper {
     @Mapping(target = "createdAt", ignore = true)
     Registration toEntity(RegistrationRequest request);
     
+    @Mapping(target = "attendanceId", ignore = true)
+    @Mapping(target = "isPresent", ignore = true)
+    @Mapping(target = "checkInTime", ignore = true)
+    @Mapping(target = "earnedPoints", ignore = true)
     RegistrationResponse toDTO(Registration registration);
 
     default String map(RegistrationStatus status) {

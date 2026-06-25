@@ -45,6 +45,22 @@ public class AttendanceController {
     }
 
     /**
+     * Student self check-in.
+     * POST /api/organizer/attendance/self-check-in
+     */
+    @PostMapping("/self-check-in")
+    public ResponseEntity<APIResponse<AttendanceResponse>> selfCheckIn(
+            @Valid @RequestBody AttendanceRequest request) {
+        log.info("Self check-in request received for registration: {}", request.getRegistrationId());
+        AttendanceResponse attendance = attendanceService.selfCheckIn(request);
+        return ResponseEntity.ok(APIResponse.<AttendanceResponse>builder()
+                .code(1000)
+                .message("Diem danh thanh cong")
+                .result(attendance)
+                .build());
+    }
+
+    /**
      * Award points after activity is closed.
      * PATCH /api/organizer/attendance/points
      */

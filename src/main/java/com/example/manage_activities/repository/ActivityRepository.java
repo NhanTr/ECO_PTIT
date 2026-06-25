@@ -5,6 +5,7 @@ import com.example.manage_activities.enums.ActivityStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -70,6 +71,33 @@ public interface ActivityRepository extends JpaRepository<Activity, String> {
             @Param("fromTime") LocalDateTime fromTime,
             @Param("toTime") LocalDateTime toTime,
             Pageable pageable);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE Activity a
+            SET a.status = :ongoingStatus
+            WHERE a.status = :approvedStatus
+              AND a.startTime IS NOT NULL
+              AND a.startTime <= :now
+              AND (a.endTime IS NULL OR a.endTime > :now)
+            """)
+    int startDueActivities(
+            @Param("approvedStatus") ActivityStatus approvedStatus,
+            @Param("ongoingStatus") ActivityStatus ongoingStatus,
+            @Param("now") LocalDateTime now);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE Activity a
+            SET a.status = :closedStatus
+            WHERE a.status IN :activeStatuses
+              AND a.endTime IS NOT NULL
+              AND a.endTime <= :now
+            """)
+    int closeExpiredActivities(
+            @Param("activeStatuses") Collection<ActivityStatus> activeStatuses,
+            @Param("closedStatus") ActivityStatus closedStatus,
+            @Param("now") LocalDateTime now);
 
     boolean existsById(String id);
 }

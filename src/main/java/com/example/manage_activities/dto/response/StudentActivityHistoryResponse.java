@@ -25,6 +25,7 @@ public class StudentActivityHistoryResponse {
     String activityStatus;
     String registrationStatus;
     Boolean isPresent;
+    LocalDateTime checkInTime;
     Integer earnedPoints;
     LocalDateTime registeredAt;
 }

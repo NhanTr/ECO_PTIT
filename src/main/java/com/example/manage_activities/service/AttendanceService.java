@@ -35,10 +35,23 @@ public class AttendanceService {
 
     @Transactional
     public AttendanceResponse checkIn(AttendanceRequest request) {
+        return checkInInternal(request, true);
+    }
+
+    @Transactional
+    public AttendanceResponse selfCheckIn(AttendanceRequest request) {
+        return checkInInternal(request, false);
+    }
+
+    private AttendanceResponse checkInInternal(AttendanceRequest request, boolean requireActivityManager) {
         Registration registration = registrationRepository.findById(request.getRegistrationId())
                 .orElseThrow(() -> new AppException(ErrorCode.REGISTRATION_NOT_FOUND));
         Activity activity = activityService.getActivityEntity(registration.getActivityId());
-        activityService.ensureCanManageActivity(activity);
+        if (requireActivityManager) {
+            activityService.ensureCanManageActivity(activity);
+        } else if (!getCurrentUserId().equals(registration.getStudentId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
 
         if (!ActivityStatus.ONGOING.equals(activity.getStatus())) {
             throw new AppException(ErrorCode.ATTENDANCE_NOT_ALLOWED);
@@ -47,16 +60,24 @@ public class AttendanceService {
             throw new AppException(ErrorCode.BAD_REQUEST);
         }
 
-        Attendance attendance = attendanceRepository.findByRegistrationId(registration.getId())
+        var existingAttendance = attendanceRepository.findByRegistrationId(registration.getId());
+        boolean newAttendance = existingAttendance.isEmpty();
+        Attendance attendance = existingAttendance
                 .orElseGet(() -> Attendance.builder()
                         .id(generateAttendanceId())
                         .registrationId(registration.getId())
                         .build());
 
-        attendance.setIsPresent(Boolean.TRUE.equals(request.getIsPresent()));
-        attendance.setCheckInTime(LocalDateTime.now());
-        if (!Boolean.TRUE.equals(attendance.getIsPresent())) {
-            attendance.setEarnedPoints(0);
+        if (requireActivityManager) {
+            attendance.setIsPresent(Boolean.TRUE.equals(request.getIsPresent()));
+            if (!Boolean.TRUE.equals(attendance.getIsPresent())) {
+                attendance.setEarnedPoints(0);
+            }
+        } else {
+            attendance.setCheckInTime(LocalDateTime.now());
+            if (newAttendance) {
+                attendance.setIsPresent(null);
+            }
         }
 
         Attendance savedAttendance = attendanceRepository.save(attendance);

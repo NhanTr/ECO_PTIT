@@ -143,7 +143,7 @@ public class RegistrationService {
         }
 
         return registrations.stream()
-                .map(registrationMapper::toDTO)
+                .map(this::toRegistrationResponse)
                 .collect(Collectors.toList());
     }
 
@@ -176,7 +176,7 @@ public class RegistrationService {
 
         return registrationRepository.findByActivityId(activityId)
                 .stream()
-                .map(registrationMapper::toDTO)
+                .map(this::toRegistrationResponse)
                 .collect(Collectors.toList());
     }
 
@@ -333,9 +333,28 @@ public class RegistrationService {
                 .activityStatus(activity == null || activity.getStatus() == null ? null : activity.getStatus().getValue())
                 .registrationStatus(registration.getStatus() == null ? null : registration.getStatus().getValue())
                 .isPresent(attendance == null ? null : attendance.getIsPresent())
+                .checkInTime(attendance == null ? null : attendance.getCheckInTime())
                 .earnedPoints(attendance == null ? 0 : attendance.getEarnedPoints())
                 .registeredAt(registration.getCreatedAt())
                 .build();
+    }
+
+    private RegistrationResponse toRegistrationResponse(Registration registration) {
+        Attendance attendance = attendanceRepository.findByRegistrationId(registration.getId()).orElse(null);
+        return toRegistrationResponse(registration, attendance);
+    }
+
+    private RegistrationResponse toRegistrationResponse(Registration registration, Attendance attendance) {
+        RegistrationResponse response = registrationMapper.toDTO(registration);
+        if (attendance == null) {
+            return response;
+        }
+
+        response.setAttendanceId(attendance.getId());
+        response.setIsPresent(attendance.getIsPresent());
+        response.setCheckInTime(attendance.getCheckInTime());
+        response.setEarnedPoints(attendance.getEarnedPoints());
+        return response;
     }
 
     private boolean matchesPeriod(LocalDateTime startTime, Integer year, Integer semester) {
