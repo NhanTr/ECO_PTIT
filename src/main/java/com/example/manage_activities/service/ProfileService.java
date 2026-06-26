@@ -51,11 +51,11 @@ public class ProfileService {
         Profile profile = new Profile();
         profile.setId(generateProfileId());
         profile.setUserId(userId);
-        profile.setFullName(request.getFullName());
-        profile.setPhone(request.getPhone());
-        profile.setDepartment(request.getDepartment());
-        profile.setStudentCode(request.getStudentCode());
-        profile.setAvatarUrl(request.getAvatarUrl());
+        profile.setFullName(blankToNull(request.getFullName()));
+        profile.setPhone(blankToNull(request.getPhone()));
+        profile.setDepartment(blankToNull(request.getDepartment()));
+        profile.setStudentCode(blankToNull(request.getStudentCode()));
+        profile.setAvatarUrl(blankToNull(request.getAvatarUrl()));
 
         // Save new profile
         profileRepository.save(profile);
@@ -76,11 +76,11 @@ public class ProfileService {
             throw new AppException(ErrorCode.DONT_EXIST_PROFILE);
         }
 
-        existingProfile.setFullName(request.getFullName());
-        existingProfile.setPhone(request.getPhone());
-        existingProfile.setDepartment(request.getDepartment());
-        existingProfile.setStudentCode(request.getStudentCode());
-        existingProfile.setAvatarUrl(request.getAvatarUrl());
+        existingProfile.setFullName(blankToNull(request.getFullName()));
+        existingProfile.setPhone(blankToNull(request.getPhone()));
+        existingProfile.setDepartment(blankToNull(request.getDepartment()));
+        existingProfile.setStudentCode(blankToNull(request.getStudentCode()));
+        existingProfile.setAvatarUrl(blankToNull(request.getAvatarUrl()));
         
         // Save updated profile
         profileRepository.save(existingProfile);
@@ -98,6 +98,10 @@ public class ProfileService {
             id = UUID.randomUUID().toString().replace("-", "").substring(0, 10);
         }
         return id;
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private ProfileResponse toResponse(Profile profile) {

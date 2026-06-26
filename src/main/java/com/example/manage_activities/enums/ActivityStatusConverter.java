@@ -13,6 +13,6 @@ public class ActivityStatusConverter implements AttributeConverter<ActivityStatu
 
     @Override
     public ActivityStatus convertToEntityAttribute(String dbData) {
-        return dbData == null ? null : ActivityStatus.from(dbData);
+        return dbData == null || dbData.isBlank() ? null : ActivityStatus.from(dbData);
     }
 }

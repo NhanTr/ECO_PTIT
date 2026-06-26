@@ -13,6 +13,6 @@ public class RegistrationStatusConverter implements AttributeConverter<Registrat
 
     @Override
     public RegistrationStatus convertToEntityAttribute(String dbData) {
-        return dbData == null ? null : RegistrationStatus.from(dbData);
+        return dbData == null || dbData.isBlank() ? null : RegistrationStatus.from(dbData);
     }
 }

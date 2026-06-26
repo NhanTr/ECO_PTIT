@@ -63,10 +63,6 @@ public class ActivityService {
             List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
     private static final List<ActivityStatus> SCHEDULE_CONFLICT_STATUSES =
             List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
-    private static final List<ActivityStatus> APPROVABLE_STATUSES =
-            List.of(ActivityStatus.PENDING, ActivityStatus.REVIEWING);
-    private static final List<ActivityStatus> REJECTABLE_STATUSES =
-            List.of(ActivityStatus.PENDING, ActivityStatus.REVIEWING);
 
     ActivityRepository activityRepository;
     ActivityMapper activityMapper;
@@ -261,11 +257,11 @@ public class ActivityService {
         }
 
         activity.setCancelReason(reason);
-        activity.setStatus(ActivityStatus.REVIEWING);
+        activity.setStatus(ActivityStatus.CANCELLATION_REQUESTED);
         Activity savedActivity = activityRepository.save(activity);
         systemLogService.logAction(getCurrentUserId(), "REQUEST_CANCEL_ACTIVITY", "activities",
                 "activityId=" + id + ", status=Approved",
-                "activityId=" + id + ", status=Reviewing, reason=" + reason);
+                "activityId=" + id + ", status=CancellationRequested, reason=" + reason);
         return activityMapper.toDTO(savedActivity);
     }
 
@@ -372,6 +368,27 @@ public class ActivityService {
     }
 
     @Transactional
+    public ActivityResponse startActivityReview(String id) {
+        Activity activity = getActivityEntity(id);
+
+        if (ActivityStatus.REVIEWING.equals(activity.getStatus())) {
+            return activityMapper.toDTO(activity);
+        }
+        if (!ActivityStatus.PENDING.equals(activity.getStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
+        }
+
+        String reviewerId = getCurrentUserId();
+        activity.setStatus(ActivityStatus.REVIEWING);
+        activity.setReviewerId(reviewerId);
+        Activity savedActivity = activityRepository.save(activity);
+        systemLogService.logAction(reviewerId, "START_ACTIVITY_REVIEW", "activities",
+                "activityId=" + id + ", status=Pending",
+                "activityId=" + id + ", status=Reviewing");
+        return activityMapper.toDTO(savedActivity);
+    }
+
+    @Transactional
     public ActivityResponse approveActivity(String id) {
         log.info("Approving activity with ID: {}", id);
 
@@ -380,7 +397,9 @@ public class ActivityService {
         if (ActivityStatus.APPROVED.equals(activity.getStatus())) {
             throw new AppException(ErrorCode.ACTIVITY_ALREADY_APPROVED);
         }
-        ensureActivityStatusIn(activity, APPROVABLE_STATUSES, "approve");
+        if (!ActivityStatus.REVIEWING.equals(activity.getStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
+        }
 
         String reviewerId = getCurrentUserId();
         activity.setStatus(ActivityStatus.APPROVED);
@@ -408,7 +427,9 @@ public class ActivityService {
         if (ActivityStatus.REJECTED.equals(activity.getStatus())) {
             throw new AppException(ErrorCode.ACTIVITY_ALREADY_REJECTED);
         }
-        ensureActivityStatusIn(activity, REJECTABLE_STATUSES, "reject");
+        if (!ActivityStatus.REVIEWING.equals(activity.getStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
+        }
 
         String reviewerId = getCurrentUserId();
         activity.setRejectReason(rejectReason);
@@ -428,7 +449,9 @@ public class ActivityService {
     @Transactional
     public ActivityResponse approveCancelRequest(String id) {
         Activity activity = getActivityEntity(id);
-        ensureActivityStatusIn(activity, List.of(ActivityStatus.REVIEWING), "approve-cancel");
+        if (!ActivityStatus.CANCELLATION_REQUESTED.equals(activity.getStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
+        }
 
         activity.setStatus(ActivityStatus.CANCELLED);
         activity.setReviewerId(getCurrentUserId());
@@ -437,7 +460,7 @@ public class ActivityService {
                 "Yeu cau huy hoat dong da duoc duyet",
                 "Yeu cau huy hoat dong \"" + savedActivity.getTitle() + "\" da duoc chap nhan.");
         systemLogService.logAction(getCurrentUserId(), "APPROVE_CANCEL_ACTIVITY", "activities",
-                "activityId=" + id + ", status=Reviewing",
+                "activityId=" + id + ", status=CancellationRequested",
                 "activityId=" + id + ", status=Cancelled");
         return activityMapper.toDTO(savedActivity);
     }
@@ -445,7 +468,9 @@ public class ActivityService {
     @Transactional
     public ActivityResponse rejectCancelRequest(String id, String reason) {
         Activity activity = getActivityEntity(id);
-        ensureActivityStatusIn(activity, List.of(ActivityStatus.REVIEWING), "reject-cancel");
+        if (!ActivityStatus.CANCELLATION_REQUESTED.equals(activity.getStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
+        }
 
         activity.setStatus(ActivityStatus.APPROVED);
         activity.setReviewerId(getCurrentUserId());
@@ -454,8 +479,31 @@ public class ActivityService {
                 "Yeu cau huy hoat dong bi tu choi",
                 "Yeu cau huy hoat dong \"" + savedActivity.getTitle() + "\" bi tu choi. Ly do: " + reason);
         systemLogService.logAction(getCurrentUserId(), "REJECT_CANCEL_ACTIVITY", "activities",
-                "activityId=" + id + ", status=Reviewing",
+                "activityId=" + id + ", status=CancellationRequested",
                 "activityId=" + id + ", status=Approved, reason=" + reason);
+        return activityMapper.toDTO(savedActivity);
+    }
+
+    @Transactional
+    public ActivityResponse cancelApprovedActivityByManager(String id, String reason) {
+        Activity activity = getActivityEntity(id);
+        if (!ActivityStatus.APPROVED.equals(activity.getStatus())
+                && !ActivityStatus.ONGOING.equals(activity.getStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
+        }
+
+        String reviewerId = getCurrentUserId();
+        ActivityStatus oldStatus = activity.getStatus();
+        activity.setStatus(ActivityStatus.CANCELLED);
+        activity.setReviewerId(reviewerId);
+        activity.setCancelReason(reason);
+        Activity savedActivity = activityRepository.save(activity);
+        notifyOrganizer(savedActivity,
+                "Hoat dong da bi huy",
+                "Hoat dong \"" + savedActivity.getTitle() + "\" da bi huy. Ly do: " + reason);
+        systemLogService.logAction(reviewerId, "CANCEL_APPROVED_ACTIVITY", "activities",
+                "activityId=" + id + ", status=" + oldStatus.getValue(),
+                "activityId=" + id + ", status=Cancelled, reason=" + reason);
         return activityMapper.toDTO(savedActivity);
     }
 

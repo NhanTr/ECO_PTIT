@@ -19,9 +19,17 @@ public enum RegistrationStatus {
     }
 
     public static RegistrationStatus from(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        String normalized = value.trim();
+        if ("registered".equalsIgnoreCase(normalized)) {
+            return PENDING;
+        }
         return Arrays.stream(values())
-                .filter(status -> status.name().equalsIgnoreCase(value)
-                        || status.value.equalsIgnoreCase(value))
+                .filter(status -> status.name().equalsIgnoreCase(normalized)
+                        || status.value.equalsIgnoreCase(normalized))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Invalid registration status: " + value));
     }

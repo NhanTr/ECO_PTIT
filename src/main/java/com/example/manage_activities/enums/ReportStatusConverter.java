@@ -13,6 +13,6 @@ public class ReportStatusConverter implements AttributeConverter<ReportStatus, S
 
     @Override
     public ReportStatus convertToEntityAttribute(String dbData) {
-        return dbData == null ? null : ReportStatus.from(dbData);
+        return dbData == null || dbData.isBlank() ? null : ReportStatus.from(dbData);
     }
 }

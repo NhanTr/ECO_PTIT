@@ -10,6 +10,7 @@ import com.example.manage_activities.repository.ActivityFileRepository;
 import com.example.manage_activities.repository.ActivityRepository;
 import com.example.manage_activities.repository.AttendanceRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
+import com.example.manage_activities.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -35,12 +36,13 @@ class ActivityServiceTest {
     private final RegistrationRepository registrationRepository = mock(RegistrationRepository.class);
     private final ActivityFileRepository activityFileRepository = mock(ActivityFileRepository.class);
     private final AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
+    private final UserRepository userRepository = mock(UserRepository.class);
     private final NotificationService notificationService = mock(NotificationService.class);
     private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
     private final SystemLogService systemLogService = mock(SystemLogService.class);
     private final ActivityService activityService =
             new ActivityService(activityRepository, activityMapper, registrationRepository, activityFileRepository,
-                    attendanceRepository, notificationService, systemConfigService, systemLogService);
+                    attendanceRepository, userRepository, notificationService, systemConfigService, systemLogService);
 
     @AfterEach
     void cleanupSecurityContext() {
@@ -51,7 +53,7 @@ class ActivityServiceTest {
     void approveActivity_shouldApproveAndSetReviewer() {
         Activity activity = Activity.builder()
                 .id("act1234567")
-                .status(ActivityStatus.PENDING)
+                .status(ActivityStatus.REVIEWING)
                 .build();
         ActivityResponse response = ActivityResponse.builder()
                 .id("act1234567")
@@ -131,6 +133,9 @@ class ActivityServiceTest {
                 eq(List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING)),
                 eq(ActivityStatus.CLOSED),
                 eq(now));
+    }
+
+    @Test
     void approveActivity_shouldThrowWhenStatusIsCancelled() {
         Activity activity = Activity.builder()
                 .id("act1234567")
@@ -149,7 +154,7 @@ class ActivityServiceTest {
     void rejectActivity_shouldPersistRejectReason() {
         Activity activity = Activity.builder()
                 .id("act1234567")
-                .status(ActivityStatus.PENDING)
+                .status(ActivityStatus.REVIEWING)
                 .title("Test Activity")
                 .organizerId("org1234567")
                 .build();

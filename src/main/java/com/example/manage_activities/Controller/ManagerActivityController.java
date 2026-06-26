@@ -59,6 +59,20 @@ public class ManagerActivityController {
     }
 
     /**
+     * Mark a pending activity as being reviewed.
+     * PATCH /api/manager/activities/{id}/review
+     */
+    @PatchMapping("/{id}/review")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public ResponseEntity<APIResponse<ActivityResponse>> startReview(@PathVariable String id) {
+        return ResponseEntity.ok(APIResponse.<ActivityResponse>builder()
+                .code(1000)
+                .message("Dang duyet hoat dong")
+                .result(activityService.startActivityReview(id))
+                .build());
+    }
+
+    /**
      * Approve activity to be publicly available.
      * Patch /api/manager/activities/{id}/approve
      * @deprecated Use PUT /api/admin/activities/{id}/approve
@@ -92,6 +106,22 @@ public class ManagerActivityController {
         return ResponseEntity.ok(APIResponse.<Void>builder()
                 .code(1000)
                 .message("Da tu choi")
+                .build());
+    }
+
+    /**
+     * Cancel an approved activity directly.
+     * PATCH /api/manager/activities/{id}/cancel
+     */
+    @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public ResponseEntity<APIResponse<ActivityResponse>> cancelApprovedActivity(
+            @PathVariable String id,
+            @Valid @RequestBody RejectActivityRequest request) {
+        return ResponseEntity.ok(APIResponse.<ActivityResponse>builder()
+                .code(1000)
+                .message("Da huy hoat dong")
+                .result(activityService.cancelApprovedActivityByManager(id, request.getReason()))
                 .build());
     }
 
