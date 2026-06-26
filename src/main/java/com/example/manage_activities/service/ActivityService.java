@@ -37,7 +37,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -63,6 +68,7 @@ public class ActivityService {
             List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
     private static final List<ActivityStatus> SCHEDULE_CONFLICT_STATUSES =
             List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
+    private static final Path ACTIVITY_REPORT_UPLOAD_DIRECTORY = Path.of("uploads", "activity-reports");
 
     ActivityRepository activityRepository;
     ActivityMapper activityMapper;
@@ -290,6 +296,61 @@ public class ActivityService {
 
         ActivityFile savedReport = activityFileRepository.save(report);
         systemLogService.logAction(getCurrentUserId(), "SUBMIT_ACTIVITY_REPORT", "activity_files",
+                null,
+                "reportId=" + savedReport.getId() + ", activityId=" + activityId);
+        return toActivityFileResponse(savedReport);
+    }
+
+    @Transactional
+    public ActivityFileResponse submitReportFile(String activityId, MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+
+        Activity activity = getActivityEntity(activityId);
+        ensureCanManageActivity(activity);
+
+        if (!ActivityStatus.CLOSED.equals(activity.getStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_REPORT_NOT_ALLOWED);
+        }
+
+        String originalFileName = normalizeFileName(file.getOriginalFilename());
+        if (!isExcelFile(originalFileName)) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+
+        String reportId = generateActivityFileId();
+        String storedFileName = reportId + getExtension(originalFileName);
+        Path uploadPath = ACTIVITY_REPORT_UPLOAD_DIRECTORY.toAbsolutePath().normalize();
+        Path targetPath = uploadPath.resolve(storedFileName).normalize();
+
+        if (!targetPath.startsWith(uploadPath)) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+
+        try {
+            Files.createDirectories(uploadPath);
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException exception) {
+            log.error("Could not store report file for activityId={}", activityId, exception);
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+
+        ActivityFile report = ActivityFile.builder()
+                .id(reportId)
+                .activityId(activityId)
+                .uploadedBy(getCurrentUserId())
+                .reportStatus(ReportStatus.PENDING)
+                .fileUrl("/uploads/activity-reports/" + storedFileName)
+                .fileType("Report")
+                .originalFileName(originalFileName)
+                .contentType(file.getContentType())
+                .fileSize(file.getSize())
+                .uploadedAt(LocalDateTime.now())
+                .build();
+
+        ActivityFile savedReport = activityFileRepository.save(report);
+        systemLogService.logAction(getCurrentUserId(), "UPLOAD_ACTIVITY_REPORT", "activity_files",
                 null,
                 "reportId=" + savedReport.getId() + ", activityId=" + activityId);
         return toActivityFileResponse(savedReport);
@@ -813,6 +874,26 @@ public class ActivityService {
             return null;
         }
         return value.trim();
+    }
+
+    private String normalizeFileName(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+        return Path.of(fileName).getFileName().toString();
+    }
+
+    private boolean isExcelFile(String fileName) {
+        String normalized = fileName.toLowerCase();
+        return normalized.endsWith(".xls") || normalized.endsWith(".xlsx");
+    }
+
+    private String getExtension(String fileName) {
+        int index = fileName.lastIndexOf('.');
+        if (index < 0) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+        return fileName.substring(index).toLowerCase();
     }
 
     private boolean matchesPeriod(LocalDateTime startTime, Integer year, Integer semester) {

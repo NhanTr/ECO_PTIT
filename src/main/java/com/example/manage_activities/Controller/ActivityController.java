@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -120,6 +121,19 @@ public class ActivityController {
             @Valid @RequestBody ActivityReportRequest request) {
         log.info("Submit report request received for activity ID: {}", id);
         return ResponseEntity.status(HttpStatus.CREATED).body(activityService.submitReport(id, request));
+    }
+
+    /**
+     * Upload an Excel report file after the activity is closed.
+     * POST /api/v1/activities/{id}/reports/upload
+     */
+    @PostMapping("/{id}/reports/upload")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
+    public ResponseEntity<ActivityFileResponse> uploadReport(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file) {
+        log.info("Upload report file request received for activity ID: {}", id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(activityService.submitReportFile(id, file));
     }
 
     /**

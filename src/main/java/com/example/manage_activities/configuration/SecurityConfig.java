@@ -35,6 +35,7 @@ public class SecurityConfig {
         httpSecurity.authorizeHttpRequests(request -> request
                 // Public endpoints - no authentication required
                 .requestMatchers("/auth/**").permitAll()
+            .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
             .requestMatchers(HttpMethod.GET, "/api/v1/activities/**").permitAll()
                 
                 // Self-service user endpoints
