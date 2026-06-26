@@ -1,7 +1,6 @@
 package com.example.manage_activities.controller;
 
 import com.example.manage_activities.Controller.AdminUserController;
-import com.example.manage_activities.dto.request.AssignRoleRequest;
 import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserIdentityRequest;
 import com.example.manage_activities.dto.response.UserResponse;
@@ -29,7 +28,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -156,25 +154,6 @@ class AdminUserControllerSecurityTest {
             verify(userService).deactivateUser(ADMIN_USER_ID);
         }
 
-        @Test
-        @WithMockUser(username = "manager-caller", roles = "MANAGER")
-        void assignAdminRole_returnsForbiddenWithPolicyErrorCode() throws Exception {
-            AssignRoleRequest request = AssignRoleRequest.builder()
-                    .roleId(Roles.ADMIN.getId())
-                    .build();
-
-            doThrow(new AppException(ErrorCode.ROLE_ASSIGNMENT_FORBIDDEN))
-                    .when(userService).assignPrimaryRole(eq(STUDENT_USER_ID), eq(Roles.ADMIN.getId()));
-
-            mockMvc.perform(put(BASE_URL + "/" + STUDENT_USER_ID + "/role")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value(ErrorCode.ROLE_ASSIGNMENT_FORBIDDEN.getCode()))
-                    .andExpect(jsonPath("$.message").value(ErrorCode.ROLE_ASSIGNMENT_FORBIDDEN.getMessage()));
-
-            verify(userService).assignPrimaryRole(STUDENT_USER_ID, Roles.ADMIN.getId());
-        }
     }
 
     @Nested

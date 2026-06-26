@@ -1,10 +1,8 @@
 package com.example.manage_activities.Controller;
 
 import com.example.manage_activities.dto.request.AssignActivityRequest;
-import com.example.manage_activities.dto.request.RejectActivityRequest;
 import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.dto.response.ActivityResponse;
-import com.example.manage_activities.dto.response.ActivityReviewResponse;
 import com.example.manage_activities.dto.response.ActivityScheduleConflictResponse;
 import com.example.manage_activities.service.ActivityService;
 import jakarta.validation.Valid;
@@ -15,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -22,14 +21,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Admin / Manager activity approval and schedule control (Module 2 — QLHĐ).
- * Replaces legacy {@link ManagerActivityController} endpoints for lifecycle review.
+ * Admin activity search, schedule conflict check, and reviewer assignment.
  */
 @RestController
 @RequestMapping("/api/admin/activities")
@@ -60,7 +57,7 @@ public class AdminActivityController {
     }
 
     /**
-     * Schedule conflicts for an activity (QLHĐ_QĐ 2).
+     * Schedule conflicts for an activity.
      * GET /api/admin/activities/{id}/schedule-conflicts
      */
     @GetMapping("/{id}/schedule-conflicts")
@@ -82,62 +79,6 @@ public class AdminActivityController {
         return APIResponse.<ActivityResponse>builder()
                 .message("Da phan cong nguoi phu trach hoat dong")
                 .result(activityService.assignReviewer(id, request.getReviewerId()))
-                .build();
-    }
-
-    /**
-     * Approve activity proposal (QLHĐ_QĐ 1).
-     * PUT /api/admin/activities/{id}/approve
-     */
-    @PutMapping("/{id}/approve")
-    public APIResponse<ActivityReviewResponse> approveActivity(@PathVariable String id) {
-        log.info("Admin approve activity: {}", id);
-        return APIResponse.<ActivityReviewResponse>builder()
-                .message("Hoat dong da duoc duyet")
-                .result(activityService.approveActivityWithWarnings(id))
-                .build();
-    }
-
-    /**
-     * Reject activity proposal (QLHĐ_QĐ 1).
-     * PUT /api/admin/activities/{id}/reject
-     */
-    @PutMapping("/{id}/reject")
-    public APIResponse<ActivityResponse> rejectActivity(
-            @PathVariable String id,
-            @Valid @RequestBody RejectActivityRequest request) {
-        log.info("Admin reject activity: {}, reason: {}", id, request.getRejectReason());
-        return APIResponse.<ActivityResponse>builder()
-                .message("Da tu choi hoat dong")
-                .result(activityService.rejectActivity(id, request.getRejectReason()))
-                .build();
-    }
-
-    /**
-     * Approve club cancellation request.
-     * PUT /api/admin/activities/{id}/approve-cancel
-     */
-    @PutMapping("/{id}/approve-cancel")
-    public APIResponse<ActivityResponse> approveCancelRequest(@PathVariable String id) {
-        log.info("Admin approve cancel request for activity: {}", id);
-        return APIResponse.<ActivityResponse>builder()
-                .message("Da duyet yeu cau huy hoat dong")
-                .result(activityService.approveCancelRequest(id))
-                .build();
-    }
-
-    /**
-     * Reject club cancellation request.
-     * PUT /api/admin/activities/{id}/reject-cancel
-     */
-    @PutMapping("/{id}/reject-cancel")
-    public APIResponse<ActivityResponse> rejectCancelRequest(
-            @PathVariable String id,
-            @Valid @RequestBody RejectActivityRequest request) {
-        log.info("Admin reject cancel request for activity: {}, reason: {}", id, request.getRejectReason());
-        return APIResponse.<ActivityResponse>builder()
-                .message("Da tu choi yeu cau huy hoat dong")
-                .result(activityService.rejectCancelRequest(id, request.getRejectReason()))
                 .build();
     }
 }

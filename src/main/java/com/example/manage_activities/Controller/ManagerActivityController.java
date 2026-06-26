@@ -23,12 +23,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * @deprecated Prefer {@link AdminActivityController} at {@code /api/admin/activities} for
- * search, approve, reject, cancel approval, and schedule conflict checks (Module 2).
- * Report and statistics endpoints remain here until migrated.
- */
-@Deprecated
 @RestController
 @RequestMapping("/api/manager/activities")
 @RequiredArgsConstructor
@@ -75,9 +69,7 @@ public class ManagerActivityController {
     /**
      * Approve activity to be publicly available.
      * Patch /api/manager/activities/{id}/approve
-     * @deprecated Use PUT /api/admin/activities/{id}/approve
      */
-    @Deprecated
     @PatchMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public ResponseEntity<APIResponse<ActivityReviewResponse>> approveActivity(@PathVariable String id) {
@@ -93,9 +85,7 @@ public class ManagerActivityController {
     /**
      * Reject activity.
      * Patch /api/manager/activities/{id}/reject
-     * @deprecated Use PUT /api/admin/activities/{id}/reject
      */
-    @Deprecated
     @PatchMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public ResponseEntity<APIResponse<Void>> rejectActivity(
@@ -128,9 +118,7 @@ public class ManagerActivityController {
     /**
      * Approve cancellation request.
      * PATCH /api/manager/activities/{id}/cancel-requests/approve
-     * @deprecated Use PUT /api/admin/activities/{id}/approve-cancel
      */
-    @Deprecated
     @PatchMapping("/{id}/cancel-requests/approve")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public ResponseEntity<APIResponse<ActivityResponse>> approveCancelRequest(@PathVariable String id) {

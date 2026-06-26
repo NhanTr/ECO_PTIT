@@ -19,7 +19,6 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.http.HttpMethod;
 
 
 
@@ -51,7 +50,6 @@ public class SecurityConfig {
             .requestMatchers("/api/admin/backups/**").hasRole("ADMIN")
             .requestMatchers("/api/admin/system-configs/**").hasRole("ADMIN")
             .requestMatchers("/api/admin/system-logs/**").hasRole("ADMIN")
-            .requestMatchers("/api/admin/statistics/**").hasAnyRole("ADMIN", "MANAGER")
                 
                 // Activity endpoints - ORGANIZER, ADMIN can create/edit
             .requestMatchers(HttpMethod.POST, "/api/v1/activities").hasAnyRole("ORGANIZER", "ADMIN")
