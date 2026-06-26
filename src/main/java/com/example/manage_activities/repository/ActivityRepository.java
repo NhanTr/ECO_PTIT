@@ -21,6 +21,25 @@ public interface ActivityRepository extends JpaRepository<Activity, String> {
     List<Activity> findByStatus(ActivityStatus status);
 
     @Query("""
+            SELECT COUNT(a) > 0 FROM Activity a
+            WHERE a.organizerId = :organizerId
+              AND a.id <> :activityId
+              AND a.status IN :statuses
+              AND a.startTime IS NOT NULL
+              AND a.endTime IS NOT NULL
+              AND :startTime IS NOT NULL
+              AND :endTime IS NOT NULL
+              AND a.startTime < :endTime
+              AND a.endTime > :startTime
+            """)
+    boolean existsOverlappingOrganizerActivity(
+            @Param("organizerId") String organizerId,
+            @Param("activityId") String activityId,
+            @Param("statuses") Collection<ActivityStatus> statuses,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
+
+    @Query("""
             SELECT a FROM Activity a
             WHERE a.status IN :statuses
               AND (:keyword IS NULL
@@ -41,27 +60,26 @@ public interface ActivityRepository extends JpaRepository<Activity, String> {
             Pageable pageable);
 
     /**
-     * Finds activities in approved/ongoing lifecycle states that share the same room (location)
+     * Finds activities in approved/ongoing lifecycle states that share the same managed room
      * and have an overlapping time window with the given activity.
      */
     @Query("""
             SELECT a FROM Activity a
             WHERE a.status IN :statuses
               AND a.id <> :activityId
-              AND a.location IS NOT NULL
-              AND TRIM(a.location) <> ''
+              AND a.roomId IS NOT NULL
               AND a.startTime IS NOT NULL
               AND a.endTime IS NOT NULL
               AND :startTime IS NOT NULL
               AND :endTime IS NOT NULL
               AND a.startTime < :endTime
               AND a.endTime > :startTime
-              AND LOWER(TRIM(a.location)) = LOWER(TRIM(:location))
+              AND a.roomId = :roomId
             """)
     List<Activity> findScheduleConflicts(
             @Param("activityId") String activityId,
             @Param("statuses") Collection<ActivityStatus> statuses,
-            @Param("location") String location,
+            @Param("roomId") String roomId,
             @Param("startTime") LocalDateTime startTime,
             @Param("endTime") LocalDateTime endTime);
 

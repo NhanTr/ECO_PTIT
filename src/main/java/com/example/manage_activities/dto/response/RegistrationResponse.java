@@ -19,6 +19,11 @@ public class RegistrationResponse {
     String id;
     String activityId;
     String studentId;
+    String studentName;
+    String studentEmail;
+    String studentCode;
+    String className;
+    String department;
     String approvedBy;
     String status;
     LocalDateTime approvedAt;

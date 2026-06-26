@@ -20,6 +20,8 @@ public class ActivityResponse {
     String id;
     String title;
     String description;
+    String roomId;
+    String roomCode;
     String location;
     LocalDateTime startTime;
     LocalDateTime endTime;

@@ -53,7 +53,10 @@ public class AttendanceService {
             throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
-        if (!ActivityStatus.ONGOING.equals(activity.getStatus())) {
+        boolean attendanceAllowed = requireActivityManager
+                ? ActivityStatus.ONGOING.equals(activity.getStatus()) || ActivityStatus.CLOSED.equals(activity.getStatus())
+                : ActivityStatus.ONGOING.equals(activity.getStatus());
+        if (!attendanceAllowed) {
             throw new AppException(ErrorCode.ATTENDANCE_NOT_ALLOWED);
         }
         if (!RegistrationStatus.APPROVED.equals(registration.getStatus())) {
@@ -72,6 +75,8 @@ public class AttendanceService {
             attendance.setIsPresent(Boolean.TRUE.equals(request.getIsPresent()));
             if (!Boolean.TRUE.equals(attendance.getIsPresent())) {
                 attendance.setEarnedPoints(0);
+            } else {
+                attendance.setEarnedPoints(activity.getTrainingPoints() == null ? 0 : activity.getTrainingPoints());
             }
         } else {
             attendance.setCheckInTime(LocalDateTime.now());

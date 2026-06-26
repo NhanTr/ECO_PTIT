@@ -19,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.time.LocalDateTime;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -119,7 +120,7 @@ class NotificationServiceTest {
     }
 
     @Test
-    void sendNotificationsToStudents_shouldSendToAllUsersWhenTypeIsSystem() {
+    void sendNotificationsToStudents_shouldSendOnlyToProvidedIdsWhenTypeIsSystem() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
                         "adm0000001",
@@ -135,23 +136,20 @@ class NotificationServiceTest {
                 .userIds(List.of("std0000001"))
                 .build();
 
-        List<User> users = List.of(
-                User.builder().id("std0000001").roleId(4).build(),
-                User.builder().id("org0000001").roleId(3).build()
-        );
+        List<User> users = List.of(User.builder().id("std0000001").roleId(4).build());
 
-        when(userRepository.findAll()).thenReturn(users);
+        when(userRepository.findByIdIn(List.of("std0000001"))).thenReturn(users);
         when(notificationRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
         int sentCount = notificationService.sendNotificationsToStudents(request);
 
-        assertEquals(2, sentCount);
-        verify(userRepository).findAll();
+        assertEquals(1, sentCount);
+        verify(userRepository).findByIdIn(List.of("std0000001"));
         verify(notificationRepository).saveAll(anyList());
     }
 
     @Test
-    void sendNotificationsToStudents_shouldRejectSystemTypeWhenSenderIsNotAdmin() {
+    void sendNotificationsToStudents_shouldAllowManagerToSendSystemType() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
                         "mng0000001",
@@ -166,10 +164,15 @@ class NotificationServiceTest {
                 .type("System")
                 .build();
 
-        AppException exception = assertThrows(AppException.class,
-                () -> notificationService.sendNotificationsToStudents(request));
+        List<User> users = List.of(User.builder().id("std0000001").roleId(4).build());
+        when(userRepository.findAll()).thenReturn(users);
+        when(notificationRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
+        int sentCount = notificationService.sendNotificationsToStudents(request);
+
+        assertEquals(1, sentCount);
+        verify(userRepository).findAll();
+        verify(notificationRepository).saveAll(anyList());
     }
 
     @Test
@@ -239,6 +242,88 @@ class NotificationServiceTest {
         assertEquals("noti000001", result.get(0).getId());
         assertEquals("std0000001", result.get(0).getReceiverId());
         verify(notificationRepository).findByReceiverIdOrderByCreatedAtDesc("std0000001");
+    }
+
+    @Test
+    void getSentNotifications_shouldReturnNotificationsSentByAuthenticatedUser() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("mng0000001", "N/A")
+        );
+
+        List<Notification> notifications = List.of(
+                Notification.builder()
+                        .id("noti000002")
+                        .senderId("mng0000001")
+                        .receiverId("std0000001")
+                        .title("Thong bao")
+                        .content("Noi dung")
+                        .type("System")
+                        .isRead(false)
+                        .createdAt(LocalDateTime.now())
+                        .build()
+        );
+
+        when(notificationRepository.findBySenderIdOrderByCreatedAtDesc("mng0000001")).thenReturn(notifications);
+        when(userRepository.findById("mng0000001")).thenReturn(Optional.of(User.builder().id("mng0000001").username("manager").build()));
+        when(userRepository.findById("std0000001")).thenReturn(Optional.of(User.builder().id("std0000001").username("student").build()));
+
+        List<NotificationResponse> result = notificationService.getSentNotifications();
+
+        assertEquals(1, result.size());
+        assertEquals("noti000002", result.get(0).getId());
+        assertEquals("manager", result.get(0).getSenderName());
+        assertEquals("student", result.get(0).getReceiverName());
+        verify(notificationRepository).findBySenderIdOrderByCreatedAtDesc("mng0000001");
+    }
+
+    @Test
+    void getNotificationDetail_shouldAllowSenderToViewSentNotification() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("mng0000001", "N/A")
+        );
+
+        Notification notification = Notification.builder()
+                .id("noti000003")
+                .senderId("mng0000001")
+                .receiverId("std0000001")
+                .title("Thong bao")
+                .content("Noi dung")
+                .type("System")
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(notificationRepository.findById("noti000003")).thenReturn(Optional.of(notification));
+
+        NotificationResponse result = notificationService.getNotificationDetail("noti000003");
+
+        assertEquals("noti000003", result.getId());
+        assertEquals("mng0000001", result.getSenderId());
+    }
+
+    @Test
+    void getNotificationDetail_shouldRejectUnrelatedUser() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("org0000001", "N/A")
+        );
+
+        Notification notification = Notification.builder()
+                .id("noti000004")
+                .senderId("mng0000001")
+                .receiverId("std0000001")
+                .title("Thong bao")
+                .content("Noi dung")
+                .type("System")
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        when(notificationRepository.findById("noti000004")).thenReturn(Optional.of(notification));
+
+        AppException exception = assertThrows(AppException.class,
+                () -> notificationService.getNotificationDetail("noti000004"));
+
+        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
     }
 }
 

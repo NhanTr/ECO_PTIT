@@ -188,6 +188,20 @@ public class ManagerActivityController {
     }
 
     /**
+     * Download a post-activity report and mark it as being reviewed.
+     * PATCH /api/manager/activities/reports/{reportId}/download
+     */
+    @PatchMapping("/reports/{reportId}/download")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public ResponseEntity<APIResponse<ActivityFileResponse>> downloadReport(@PathVariable String reportId) {
+        return ResponseEntity.ok(APIResponse.<ActivityFileResponse>builder()
+                .code(1000)
+                .message("Dang duyet bao cao sau hoat dong")
+                .result(activityService.startReportReview(reportId))
+                .build());
+    }
+
+    /**
      * Approve a post-activity report and lock points.
      * PATCH /api/manager/activities/reports/{reportId}/approve
      */

@@ -24,6 +24,12 @@ public class Notification {
     @Column(name = "receiver_id", length = 10)
     String receiverId;
 
+    @Column(name = "sender_id", length = 10)
+    String senderId;
+
+    @Column(name = "target_label", columnDefinition = "TEXT")
+    String targetLabel;
+
     String title;
     
     @Column(columnDefinition = "TEXT")

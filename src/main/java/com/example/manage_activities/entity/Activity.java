@@ -35,6 +35,12 @@ public class Activity {
     @Column(columnDefinition = "TEXT")
     String description;
 
+    @Column(name = "room_id", length = 10)
+    String roomId;
+
+    @Column(name = "room_code", length = 10)
+    String roomCode;
+
     String location;
     LocalDateTime startTime;
     LocalDateTime endTime;

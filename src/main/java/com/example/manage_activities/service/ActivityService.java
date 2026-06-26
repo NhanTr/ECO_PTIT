@@ -13,6 +13,7 @@ import com.example.manage_activities.entity.Activity;
 import com.example.manage_activities.entity.ActivityFile;
 import com.example.manage_activities.entity.Attendance;
 import com.example.manage_activities.entity.Registration;
+import com.example.manage_activities.entity.Room;
 import com.example.manage_activities.entity.User;
 import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.enums.RegistrationStatus;
@@ -25,6 +26,7 @@ import com.example.manage_activities.repository.ActivityFileRepository;
 import com.example.manage_activities.repository.ActivityRepository;
 import com.example.manage_activities.repository.AttendanceRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
+import com.example.manage_activities.repository.RoomRepository;
 import com.example.manage_activities.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -68,6 +70,14 @@ public class ActivityService {
             List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
     private static final List<ActivityStatus> SCHEDULE_CONFLICT_STATUSES =
             List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
+    private static final List<ActivityStatus> ORGANIZER_TIME_CONFLICT_STATUSES =
+            List.of(
+                    ActivityStatus.DRAFT,
+                    ActivityStatus.PENDING,
+                    ActivityStatus.REVIEWING,
+                    ActivityStatus.CANCELLATION_REQUESTED,
+                    ActivityStatus.APPROVED,
+                    ActivityStatus.ONGOING);
     private static final Path ACTIVITY_REPORT_UPLOAD_DIRECTORY = Path.of("uploads", "activity-reports");
 
     ActivityRepository activityRepository;
@@ -75,6 +85,7 @@ public class ActivityService {
     RegistrationRepository registrationRepository;
     ActivityFileRepository activityFileRepository;
     AttendanceRepository attendanceRepository;
+    RoomRepository roomRepository;
     UserRepository userRepository;
     NotificationService notificationService;
     SystemConfigService systemConfigService;
@@ -125,12 +136,14 @@ public class ActivityService {
 
         activity.setId(generateActivityId());
         activity.setOrganizerId(organizerId);
+        applyRoom(activity, request.getRoomId());
         activity.setCurrentParticipants(0);
         activity.setStatus(ActivityStatus.DRAFT);
         activity.setCreatedAt(LocalDateTime.now());
         if (activity.getTrainingPoints() == null) {
             activity.setTrainingPoints(systemConfigService.getIntValue(SystemConfigService.DEFAULT_TRAINING_POINTS, 5));
         }
+        ensureOrganizerHasNoOverlappingActivity(activity);
 
         Activity savedActivity = activityRepository.save(activity);
         systemLogService.logAction(organizerId, "CREATE_ACTIVITY", "activities", null,
@@ -207,6 +220,7 @@ public class ActivityService {
         }
 
         applyUpdate(activity, request);
+        ensureOrganizerHasNoOverlappingActivity(activity);
         Activity savedActivity = activityRepository.save(activity);
         systemLogService.logAction(getCurrentUserId(), "UPDATE_ACTIVITY", "activities",
                 "activityId=" + id,
@@ -237,6 +251,7 @@ public class ActivityService {
             throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
         }
 
+        ensureOrganizerHasNoOverlappingActivity(activity);
         activity.setStatus(ActivityStatus.PENDING);
         Activity savedActivity = activityRepository.save(activity);
         List<ActivityScheduleConflictResponse> scheduleConflicts = findScheduleConflicts(savedActivity);
@@ -462,6 +477,7 @@ public class ActivityService {
             throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
         }
 
+        ensureOrganizerHasNoOverlappingActivity(activity);
         String reviewerId = getCurrentUserId();
         activity.setStatus(ActivityStatus.APPROVED);
         activity.setReviewerId(reviewerId);
@@ -573,6 +589,19 @@ public class ActivityService {
         return findScheduleConflicts(activity);
     }
 
+    public List<ActivityScheduleConflictResponse> previewScheduleConflicts(
+            String roomId,
+            LocalDateTime startTime,
+            LocalDateTime endTime) {
+        Activity activity = Activity.builder()
+                .id("")
+                .startTime(startTime)
+                .endTime(endTime)
+                .build();
+        applyRoom(activity, roomId);
+        return findScheduleConflicts(activity);
+    }
+
     public ManagerActivityStatisticsResponse getManagerStatistics(Integer year, Integer semester) {
         validateSemester(semester);
         List<Activity> activities = activityRepository.findAll().stream()
@@ -627,10 +656,58 @@ public class ActivityService {
                 .toList();
     }
 
+    public List<ActivityFileResponse> searchMyReports(String activityId, String reportStatus) {
+        ReportStatus status = reportStatus == null || reportStatus.isBlank() ? null : parseReportStatus(reportStatus);
+        return activityFileRepository.searchReportsByOrganizer(getCurrentUserId(), normalizeSearchValue(activityId), status)
+                .stream()
+                .map(this::toActivityFileResponse)
+                .toList();
+    }
+
+    @Transactional
+    public ActivityFileResponse cancelMyReport(String reportId) {
+        ActivityFile report = getReportEntity(reportId);
+        Activity activity = getActivityEntity(report.getActivityId());
+        ensureCanManageActivity(activity);
+
+        if (!ReportStatus.PENDING.equals(report.getReportStatus())
+                && !ReportStatus.APPROVED.equals(report.getReportStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
+        }
+
+        ReportStatus oldStatus = report.getReportStatus();
+        report.setReportStatus(ReportStatus.CANCELLED);
+        ActivityFile savedReport = activityFileRepository.save(report);
+        systemLogService.logAction(getCurrentUserId(), "CANCEL_ACTIVITY_REPORT", "activity_files",
+                "reportId=" + reportId + ", status=" + oldStatus.getValue(),
+                "reportId=" + reportId + ", status=Cancelled");
+        return toActivityFileResponse(savedReport);
+    }
+
+    @Transactional
+    public ActivityFileResponse startReportReview(String reportId) {
+        ActivityFile report = getReportEntity(reportId);
+
+        if (ReportStatus.REVIEWING.equals(report.getReportStatus())) {
+            return toActivityFileResponse(report);
+        }
+        if (!ReportStatus.PENDING.equals(report.getReportStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_REPORT_ALREADY_REVIEWED);
+        }
+
+        report.setReportStatus(ReportStatus.REVIEWING);
+        report.setReviewerId(getCurrentUserId());
+        ActivityFile savedReport = activityFileRepository.save(report);
+        systemLogService.logAction(getCurrentUserId(), "DOWNLOAD_ACTIVITY_REPORT", "activity_files",
+                "reportId=" + reportId + ", status=Pending",
+                "reportId=" + reportId + ", status=Reviewing");
+        return toActivityFileResponse(savedReport);
+    }
+
     @Transactional
     public ActivityFileResponse approveReport(String reportId) {
         ActivityFile report = getReportEntity(reportId);
-        ensurePendingReport(report);
+        ensureReviewingReport(report);
 
         Activity activity = getActivityEntity(report.getActivityId());
         report.setReportStatus(ReportStatus.APPROVED);
@@ -642,7 +719,7 @@ public class ActivityService {
                 "Bao cao sau hoat dong da duoc duyet",
                 "Bao cao cua hoat dong \"" + activity.getTitle() + "\" da duoc duyet. Diem hoat dong da duoc xac nhan.");
         systemLogService.logAction(getCurrentUserId(), "APPROVE_ACTIVITY_REPORT", "activity_files",
-                "reportId=" + reportId + ", status=Pending",
+                "reportId=" + reportId + ", status=Reviewing",
                 "reportId=" + reportId + ", status=Approved");
         return toActivityFileResponse(savedReport);
     }
@@ -650,7 +727,7 @@ public class ActivityService {
     @Transactional
     public ActivityFileResponse rejectReport(String reportId, String reason) {
         ActivityFile report = getReportEntity(reportId);
-        ensurePendingReport(report);
+        ensureReviewingReport(report);
 
         Activity activity = getActivityEntity(report.getActivityId());
         report.setReportStatus(ReportStatus.REJECTED);
@@ -662,7 +739,7 @@ public class ActivityService {
                 "Bao cao sau hoat dong bi tu choi",
                 "Bao cao cua hoat dong \"" + activity.getTitle() + "\" bi tu choi. Ly do: " + reason);
         systemLogService.logAction(getCurrentUserId(), "REJECT_ACTIVITY_REPORT", "activity_files",
-                "reportId=" + reportId + ", status=Pending",
+                "reportId=" + reportId + ", status=Reviewing",
                 "reportId=" + reportId + ", status=Rejected, reason=" + reason);
         return toActivityFileResponse(savedReport);
     }
@@ -721,7 +798,7 @@ public class ActivityService {
     private void applyUpdate(Activity activity, ActivityUpdateRequest request) {
         if (request.getTitle() != null) activity.setTitle(request.getTitle());
         if (request.getDescription() != null) activity.setDescription(request.getDescription());
-        if (request.getLocation() != null) activity.setLocation(request.getLocation());
+        if (request.getRoomId() != null) applyRoom(activity, request.getRoomId());
         if (request.getStartTime() != null) activity.setStartTime(request.getStartTime());
         if (request.getEndTime() != null) activity.setEndTime(request.getEndTime());
         if (request.getRegistrationDeadline() != null) activity.setRegistrationDeadline(request.getRegistrationDeadline());
@@ -788,8 +865,11 @@ public class ActivityService {
         return report;
     }
 
-    private void ensurePendingReport(ActivityFile report) {
-        if (!ReportStatus.PENDING.equals(report.getReportStatus())) {
+    private void ensureReviewingReport(ActivityFile report) {
+        if (ReportStatus.PENDING.equals(report.getReportStatus())) {
+            throw new AppException(ErrorCode.ACTIVITY_REPORT_NOT_DOWNLOADED);
+        }
+        if (!ReportStatus.REVIEWING.equals(report.getReportStatus())) {
             throw new AppException(ErrorCode.ACTIVITY_REPORT_ALREADY_REVIEWED);
         }
     }
@@ -821,15 +901,15 @@ public class ActivityService {
         if (activity.getStartTime() == null || activity.getEndTime() == null) {
             return List.of();
         }
-        String normalizedLocation = normalizeLocation(activity.getLocation());
-        if (normalizedLocation == null) {
+        String normalizedRoomId = normalizeSearchValue(activity.getRoomId());
+        if (normalizedRoomId == null) {
             return List.of();
         }
 
         return activityRepository.findScheduleConflicts(
                         activity.getId(),
                         SCHEDULE_CONFLICT_STATUSES,
-                        normalizedLocation,
+                        normalizedRoomId,
                         activity.getStartTime(),
                         activity.getEndTime())
                 .stream()
@@ -858,11 +938,45 @@ public class ActivityService {
         }
     }
 
+    private void ensureOrganizerHasNoOverlappingActivity(Activity activity) {
+        if (activity.getOrganizerId() == null || activity.getStartTime() == null || activity.getEndTime() == null) {
+            return;
+        }
+
+        boolean hasConflict = activityRepository.existsOverlappingOrganizerActivity(
+                activity.getOrganizerId(),
+                activity.getId(),
+                ORGANIZER_TIME_CONFLICT_STATUSES,
+                activity.getStartTime(),
+                activity.getEndTime());
+        if (hasConflict) {
+            throw new AppException(ErrorCode.ORGANIZER_ACTIVITY_TIME_CONFLICT);
+        }
+    }
+
     private String normalizeLocation(String location) {
         if (location == null || location.isBlank()) {
             return null;
         }
         return location.trim();
+    }
+
+    private void applyRoom(Activity activity, String roomId) {
+        String normalizedRoomId = normalizeSearchValue(roomId);
+        if (normalizedRoomId == null) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+
+        Room room = roomRepository.findById(normalizedRoomId)
+                .or(() -> roomRepository.findByCodeIgnoreCase(normalizedRoomId))
+                .orElseThrow(() -> new AppException(ErrorCode.BAD_REQUEST));
+        if (!"active".equalsIgnoreCase(room.getStatus())) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
+        }
+
+        activity.setRoomId(room.getId());
+        activity.setRoomCode(room.getCode());
+        activity.setLocation(room.getCode());
     }
 
     private void notifyOrganizer(Activity activity, String title, String content) {
