@@ -148,4 +148,16 @@ public interface ActivityRepository extends JpaRepository<Activity, String> {
     List<ActivityStatusCountProjection> countActivitiesGroupByStatus(
             @Param("fromTime") LocalDateTime fromTime,
             @Param("toTime") LocalDateTime toTime);
+
+    /**
+     * Đếm hoạt động bắt đầu trong khoảng thời gian (dùng cho thống kê theo học kỳ).
+     */
+    @Query("""
+            SELECT COUNT(a) FROM Activity a
+            WHERE (:fromTime IS NULL OR a.startTime >= :fromTime)
+              AND (:toTime IS NULL OR a.startTime <= :toTime)
+            """)
+    long countActivitiesInPeriod(
+            @Param("fromTime") LocalDateTime fromTime,
+            @Param("toTime") LocalDateTime toTime);
 }

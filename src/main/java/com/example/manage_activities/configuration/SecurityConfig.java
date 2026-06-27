@@ -40,16 +40,28 @@ public class SecurityConfig {
                 // Self-service user endpoints
             .requestMatchers(HttpMethod.POST, "/api/v1/users/change-password").authenticated()
 
-                // Admin Module 1 - user & role management
-            .requestMatchers("/api/admin/users/**").hasAnyRole("ADMIN", "MANAGER")
-            .requestMatchers("/api/admin/roles/**").hasAnyRole("ADMIN", "MANAGER")
+                // Admin Module 1 - user & role management (chỉ QTHT - QTHT_QĐ 1)
+            .requestMatchers("/api/admin/users/**").hasRole("ADMIN")
+            .requestMatchers("/api/admin/roles/**").hasRole("ADMIN")
             .requestMatchers("/api/admin/activities/**").hasAnyRole("ADMIN", "MANAGER")
 
-                // Module 4 — system administration
+                // Module 4 — system administration (chỉ QTHT)
             .requestMatchers("/api/admin/notifications/**").hasAnyRole("ADMIN", "MANAGER")
             .requestMatchers("/api/admin/backups/**").hasRole("ADMIN")
             .requestMatchers("/api/admin/system-configs/**").hasRole("ADMIN")
             .requestMatchers("/api/admin/system-logs/**").hasRole("ADMIN")
+                // QTHT #5 — system statistics (admin only)
+            .requestMatchers("/api/admin/system-statistics/**").hasRole("ADMIN")
+                // QTHT #2 — admin role assignment endpoints (chỉ ADMIN)
+            .requestMatchers("/api/admin/users/*/assign-role", "/api/admin/users/*/revoke-role").hasRole("ADMIN")
+                // QTHT #7 — categories management (admin only)
+            .requestMatchers("/api/admin/categories/**").hasRole("ADMIN")
+                // QTHT #8 — notification channels & templates (admin only)
+            .requestMatchers("/api/admin/notification-channels/**", "/api/admin/notification-templates/**").hasRole("ADMIN")
+                // QTHT #9 — academic periods (admin only)
+            .requestMatchers("/api/admin/academic-periods/**").hasRole("ADMIN")
+                // QTHT #10 — dynamic permissions (admin only)
+            .requestMatchers("/api/admin/permissions/**").hasRole("ADMIN")
                 
                 // Activity endpoints - ORGANIZER, ADMIN can create/edit
             .requestMatchers(HttpMethod.POST, "/api/v1/activities").hasAnyRole("ORGANIZER", "ADMIN")
