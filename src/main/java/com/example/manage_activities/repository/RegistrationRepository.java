@@ -40,6 +40,19 @@ public interface RegistrationRepository extends JpaRepository<Registration, Stri
             @Param("activityIds") Collection<String> activityIds,
             @Param("statuses") Collection<RegistrationStatus> statuses);
 
+    /**
+     * Đếm đăng ký có activity bắt đầu trong khoảng thời gian (dùng cho thống kê theo học kỳ).
+     */
+    @Query("""
+            SELECT COUNT(r) FROM Registration r, Activity a
+            WHERE r.activityId = a.id
+              AND (:fromTime IS NULL OR a.startTime >= :fromTime)
+              AND (:toTime IS NULL OR a.startTime <= :toTime)
+            """)
+    long countRegistrationsInPeriod(
+            @Param("fromTime") LocalDateTime fromTime,
+            @Param("toTime") LocalDateTime toTime);
+
     @Query("""
             SELECT r
             FROM Registration r, Activity a

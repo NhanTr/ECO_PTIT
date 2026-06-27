@@ -13,7 +13,10 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AssignRoleRequest {
+public class RolePermissionToggleRequest {
     @NotNull
-    Integer roleId;
+    String permissionKey;
+
+    @NotNull
+    Boolean enabled;
 }

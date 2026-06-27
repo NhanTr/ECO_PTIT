@@ -1,6 +1,5 @@
-package com.example.manage_activities.dto.request;
+package com.example.manage_activities.dto.response;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +12,8 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AssignRoleRequest {
-    @NotNull
+public class RolePermissionResponse {
     Integer roleId;
+    String permissionKey;
+    Boolean enabled;
 }

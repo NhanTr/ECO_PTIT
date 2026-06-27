@@ -33,9 +33,11 @@ public class RoleAssignmentPolicy {
 
     public void assertCanManageUsers() {
         Roles caller = getCallerRole();
-        if (caller == Roles.ADMIN || caller == Roles.MANAGER) {
+        if (caller == Roles.ADMIN) {
             return;
         }
+        // Theo QTHT_QĐ 1: chỉ QTHT (ADMIN) mới có quyền quản lý người dùng.
+        // MANAGER chỉ duyệt hoạt động, không can thiệp tài khoản hệ thống.
         throw new AppException(ErrorCode.ROLE_ASSIGNMENT_FORBIDDEN);
     }
 

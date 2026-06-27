@@ -1,6 +1,5 @@
-package com.example.manage_activities.dto.request;
+package com.example.manage_activities.dto.response;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,12 +7,19 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AssignRoleRequest {
-    @NotNull
-    Integer roleId;
+public class NotificationChannelResponse {
+    String id;
+    String code;
+    String name;
+    String description;
+    String status;
+    LocalDateTime createdAt;
+    LocalDateTime updatedAt;
 }
