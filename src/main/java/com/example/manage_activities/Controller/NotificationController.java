@@ -42,7 +42,7 @@ public class NotificationController {
         List<NotificationResponse> notifications = notificationService.getMyNotifications();
         return ResponseEntity.ok(APIResponse.<List<NotificationResponse>>builder()
                 .code(1000)
-                .message("Lay danh sach thong bao thanh cong")
+                .message("Lấy danh sách thông báo thành công")
                 .result(notifications)
                 .build());
     }
@@ -57,7 +57,7 @@ public class NotificationController {
         List<NotificationResponse> notifications = notificationService.getSentNotifications();
         return ResponseEntity.ok(APIResponse.<List<NotificationResponse>>builder()
                 .code(1000)
-                .message("Lay danh sach thong bao da gui thanh cong")
+                .message("Lấy danh sách thông báo đã gửi thành công")
                 .result(notifications)
                 .build());
     }
@@ -72,7 +72,7 @@ public class NotificationController {
         NotificationResponse notification = notificationService.getNotificationDetail(id);
         return ResponseEntity.ok(APIResponse.<NotificationResponse>builder()
                 .code(1000)
-                .message("Lay chi tiet thong bao thanh cong")
+                .message("Lấy chi tiết thông báo thành công")
                 .result(notification)
                 .build());
     }
@@ -87,7 +87,7 @@ public class NotificationController {
         NotificationResponse notification = notificationService.markNotificationReadStatus(id, true);
         return ResponseEntity.ok(APIResponse.<NotificationResponse>builder()
                 .code(1000)
-                .message("Danh dau thong bao da doc thanh cong")
+                .message("Đánh dấu thông báo đã đọc thành công")
                 .result(notification)
                 .build());
     }
@@ -102,7 +102,7 @@ public class NotificationController {
         NotificationResponse notification = notificationService.markNotificationReadStatus(id, false);
         return ResponseEntity.ok(APIResponse.<NotificationResponse>builder()
                 .code(1000)
-                .message("Danh dau thong bao chua doc thanh cong")
+                .message("Đánh dấu thông báo chưa đọc thành công")
                 .result(notification)
                 .build());
     }
@@ -120,7 +120,7 @@ public class NotificationController {
         int sentCount = notificationService.sendNotifications(request);
         return ResponseEntity.ok(APIResponse.<Integer>builder()
                 .code(1000)
-                .message("Gui thong bao thanh cong")
+                .message("Gửi thông báo thành công")
                 .result(sentCount)
                 .build());
     }

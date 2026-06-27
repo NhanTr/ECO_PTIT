@@ -441,8 +441,8 @@ public class ActivityService {
         activity.setReviewerId(reviewerId);
         Activity savedActivity = activityRepository.save(activity);
         notifyOrganizer(savedActivity,
-                "Hoat dong da duoc phan cong nguoi duyet",
-                "Hoat dong \"" + savedActivity.getTitle() + "\" da duoc phan cong nguoi phu trach kiem duyet.");
+                "Hoạt động đã được phân công người duyệt",
+                "Hoạt động \"" + savedActivity.getTitle() + "\" đã được phân công người phụ trách kiểm duyệt.");
         systemLogService.logAction(getCurrentUserId(), "ASSIGN_ACTIVITY_REVIEWER", "activities",
                 "activityId=" + id + ", reviewerId=" + oldReviewerId,
                 "activityId=" + id + ", reviewerId=" + reviewerId);
@@ -491,8 +491,8 @@ public class ActivityService {
 
         Activity savedActivity = activityRepository.save(activity);
         notifyOrganizer(savedActivity,
-                "Hoat dong da duoc duyet",
-                "Hoat dong \"" + savedActivity.getTitle() + "\" da duoc duyet.");
+                "Hoạt động đã được duyệt",
+                "Hoạt động \"" + savedActivity.getTitle() + "\" đã được duyệt.");
         systemLogService.logAction(reviewerId, "APPROVE_ACTIVITY", "activities",
                 "activityId=" + id,
                 "activityId=" + id + ", status=Approved");
@@ -522,8 +522,8 @@ public class ActivityService {
 
         Activity savedActivity = activityRepository.save(activity);
         notifyOrganizer(savedActivity,
-                "Hoat dong bi tu choi",
-                "Hoat dong \"" + savedActivity.getTitle() + "\" bi tu choi. Ly do: " + rejectReason);
+                "Hoạt động bị từ chối",
+                "Hoạt động \"" + savedActivity.getTitle() + "\" bị từ chối. Lý do: " + rejectReason);
         systemLogService.logAction(reviewerId, "REJECT_ACTIVITY", "activities",
                 "activityId=" + id,
                 "activityId=" + id + ", status=Rejected, rejectReason=" + rejectReason);
@@ -541,8 +541,8 @@ public class ActivityService {
         activity.setReviewerId(getCurrentUserId());
         Activity savedActivity = activityRepository.save(activity);
         notifyOrganizer(savedActivity,
-                "Yeu cau huy hoat dong da duoc duyet",
-                "Yeu cau huy hoat dong \"" + savedActivity.getTitle() + "\" da duoc chap nhan.");
+                "Yêu cầu hủy hoạt động đã được duyệt",
+                "Yêu cầu hủy hoạt động \"" + savedActivity.getTitle() + "\" đã được chấp nhận.");
         systemLogService.logAction(getCurrentUserId(), "APPROVE_CANCEL_ACTIVITY", "activities",
                 "activityId=" + id + ", status=CancellationRequested",
                 "activityId=" + id + ", status=Cancelled");
@@ -560,8 +560,8 @@ public class ActivityService {
         activity.setReviewerId(getCurrentUserId());
         Activity savedActivity = activityRepository.save(activity);
         notifyOrganizer(savedActivity,
-                "Yeu cau huy hoat dong bi tu choi",
-                "Yeu cau huy hoat dong \"" + savedActivity.getTitle() + "\" bi tu choi. Ly do: " + reason);
+                "Yêu cầu hủy hoạt động bị từ chối",
+                "Yêu cầu hủy hoạt động \"" + savedActivity.getTitle() + "\" bị từ chối. Lý do: " + reason);
         systemLogService.logAction(getCurrentUserId(), "REJECT_CANCEL_ACTIVITY", "activities",
                 "activityId=" + id + ", status=CancellationRequested",
                 "activityId=" + id + ", status=Approved, reason=" + reason);
@@ -583,8 +583,8 @@ public class ActivityService {
         activity.setCancelReason(reason);
         Activity savedActivity = activityRepository.save(activity);
         notifyOrganizer(savedActivity,
-                "Hoat dong da bi huy",
-                "Hoat dong \"" + savedActivity.getTitle() + "\" da bi huy. Ly do: " + reason);
+                "Hoạt động đã bị hủy",
+                "Hoạt động \"" + savedActivity.getTitle() + "\" đã bị hủy. Lý do: " + reason);
         systemLogService.logAction(reviewerId, "CANCEL_APPROVED_ACTIVITY", "activities",
                 "activityId=" + id + ", status=" + oldStatus.getValue(),
                 "activityId=" + id + ", status=Cancelled, reason=" + reason);
@@ -724,8 +724,8 @@ public class ActivityService {
         ActivityFile savedReport = activityFileRepository.save(report);
         fixActivityPoints(activity);
         notifyOrganizer(activity,
-                "Bao cao sau hoat dong da duoc duyet",
-                "Bao cao cua hoat dong \"" + activity.getTitle() + "\" da duoc duyet. Diem hoat dong da duoc xac nhan.");
+                "Báo cáo sau hoạt động đã được duyệt",
+                "Báo cáo của hoạt động \"" + activity.getTitle() + "\" đã được duyệt. Điểm hoạt động đã được xác nhận.");
         systemLogService.logAction(getCurrentUserId(), "APPROVE_ACTIVITY_REPORT", "activity_files",
                 "reportId=" + reportId + ", status=Reviewing",
                 "reportId=" + reportId + ", status=Approved");
@@ -744,8 +744,8 @@ public class ActivityService {
         report.setReviewNote(reason);
         ActivityFile savedReport = activityFileRepository.save(report);
         notifyOrganizer(activity,
-                "Bao cao sau hoat dong bi tu choi",
-                "Bao cao cua hoat dong \"" + activity.getTitle() + "\" bi tu choi. Ly do: " + reason);
+                "Báo cáo sau hoạt động bị từ chối",
+                "Báo cáo của hoạt động \"" + activity.getTitle() + "\" bị từ chối. Lý do: " + reason);
         systemLogService.logAction(getCurrentUserId(), "REJECT_ACTIVITY_REPORT", "activity_files",
                 "reportId=" + reportId + ", status=Reviewing",
                 "reportId=" + reportId + ", status=Rejected, reason=" + reason);

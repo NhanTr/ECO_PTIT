@@ -221,8 +221,8 @@ public class NotificationService {
 				.receiverId(studentId)
 				.senderId(getCurrentUserId())
 				.targetLabel(studentId)
-				.title("Dang ky hoat dong da duoc duyet")
-				.content("Dang ky tham gia hoat dong " + activityTitle + " da duoc duyet.")
+				.title("Đăng ký hoạt động đã được duyệt")
+				.content("Đăng ký tham gia hoạt động " + activityTitle + " đã được duyệt.")
 				.type("Activity")
 				.isRead(false)
 				.createdAt(LocalDateTime.now())
@@ -239,8 +239,8 @@ public class NotificationService {
 				.receiverId(studentId)
 				.senderId(getCurrentUserId())
 				.targetLabel(studentId)
-				.title("Dang ky hoat dong bi tu choi")
-				.content("Dang ky tham gia hoat dong " + activityTitle + " bi tu choi. Ly do: " + reason)
+				.title("Đăng ký hoạt động bị từ chối")
+				.content("Đăng ký tham gia hoạt động " + activityTitle + " bị từ chối. Lý do: " + reason)
 				.type("Activity")
 				.isRead(false)
 				.createdAt(LocalDateTime.now())
@@ -290,13 +290,44 @@ public class NotificationService {
 				.receiverName(resolveUserName(notification.getReceiverId()))
 				.senderId(notification.getSenderId())
 				.senderName(resolveUserName(notification.getSenderId()))
-				.targetLabel(notification.getTargetLabel())
-				.title(notification.getTitle())
-				.content(notification.getContent())
+				.targetLabel(localizeLegacyNotificationText(notification.getTargetLabel()))
+				.title(localizeLegacyNotificationText(notification.getTitle()))
+				.content(localizeLegacyNotificationText(notification.getContent()))
 				.isRead(notification.getIsRead())
 				.type(notification.getType())
 				.createdAt(notification.getCreatedAt())
 				.build();
+	}
+
+	private String localizeLegacyNotificationText(String value) {
+		if (value == null || value.isBlank()) {
+			return value;
+		}
+		return value
+				.replace("Tat ca nguoi dung", "Tất cả người dùng")
+				.replace("Hoat dong da duoc phan cong nguoi duyet", "Hoạt động đã được phân công người duyệt")
+				.replace("Hoat dong da duoc duyet", "Hoạt động đã được duyệt")
+				.replace("Hoat dong bi tu choi", "Hoạt động bị từ chối")
+				.replace("Hoat dong da bi huy", "Hoạt động đã bị hủy")
+				.replace("Yeu cau huy hoat dong da duoc duyet", "Yêu cầu hủy hoạt động đã được duyệt")
+				.replace("Yeu cau huy hoat dong bi tu choi", "Yêu cầu hủy hoạt động bị từ chối")
+				.replace("Bao cao sau hoat dong da duoc duyet", "Báo cáo sau hoạt động đã được duyệt")
+				.replace("Bao cao sau hoat dong bi tu choi", "Báo cáo sau hoạt động bị từ chối")
+				.replace("Dang ky hoat dong da duoc duyet", "Đăng ký hoạt động đã được duyệt")
+				.replace("Dang ky hoat dong bi tu choi", "Đăng ký hoạt động bị từ chối")
+				.replace("Hoat dong \"", "Hoạt động \"")
+				.replace("Yeu cau huy hoat dong \"", "Yêu cầu hủy hoạt động \"")
+				.replace("Bao cao cua hoat dong \"", "Báo cáo của hoạt động \"")
+				.replace("Dang ky tham gia hoat dong ", "Đăng ký tham gia hoạt động ")
+				.replace("\" da duoc phan cong nguoi phu trach kiem duyet.", "\" đã được phân công người phụ trách kiểm duyệt.")
+				.replace("\" da duoc duyet.", "\" đã được duyệt.")
+				.replace("\" da duoc chap nhan.", "\" đã được chấp nhận.")
+				.replace("\" da bi huy. Ly do: ", "\" đã bị hủy. Lý do: ")
+				.replace("\" bi tu choi. Ly do: ", "\" bị từ chối. Lý do: ")
+				.replace("\" bi tu choi.", "\" bị từ chối.")
+				.replace(" da duoc duyet.", " đã được duyệt.")
+				.replace(" bi tu choi. Ly do: ", " bị từ chối. Lý do: ")
+				.replace("Diem hoat dong da duoc xac nhan.", "Điểm hoạt động đã được xác nhận.");
 	}
 
 	private String resolveUserName(String userId) {
@@ -321,7 +352,7 @@ public class NotificationService {
 
 	private String buildManualTargetLabel(List<String> recipientIds) {
 		if (recipientIds == null || recipientIds.isEmpty()) {
-			return "Tat ca nguoi dung";
+			return "Tất cả người dùng";
 		}
 		return String.join(", ", recipientIds);
 	}
