@@ -7,7 +7,9 @@ import com.example.manage_activities.dto.response.ActivityReviewResponse;
 import com.example.manage_activities.dto.response.ActivityResponse;
 import com.example.manage_activities.dto.response.ActivityScheduleConflictResponse;
 import com.example.manage_activities.dto.response.ManagerActivityStatisticsResponse;
+import com.example.manage_activities.dto.response.StudentStatisticsResponse;
 import com.example.manage_activities.service.ActivityService;
+import com.example.manage_activities.service.StatisticsService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -23,12 +25,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * @deprecated Prefer {@link AdminActivityController} at {@code /api/admin/activities} for
- * search, approve, reject, cancel approval, and schedule conflict checks (Module 2).
- * Report and statistics endpoints remain here until migrated.
- */
-@Deprecated
 @RestController
 @RequestMapping("/api/manager/activities")
 @RequiredArgsConstructor
@@ -37,6 +33,7 @@ import java.util.List;
 public class ManagerActivityController {
 
     ActivityService activityService;
+    StatisticsService statisticsService;
 
     /**
      * Search/filter activities by lifecycle status.
@@ -59,11 +56,23 @@ public class ManagerActivityController {
     }
 
     /**
+     * Mark a pending activity as being reviewed.
+     * PATCH /api/manager/activities/{id}/review
+     */
+    @PatchMapping("/{id}/review")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public ResponseEntity<APIResponse<ActivityResponse>> startReview(@PathVariable String id) {
+        return ResponseEntity.ok(APIResponse.<ActivityResponse>builder()
+                .code(1000)
+                .message("Dang duyet hoat dong")
+                .result(activityService.startActivityReview(id))
+                .build());
+    }
+
+    /**
      * Approve activity to be publicly available.
      * Patch /api/manager/activities/{id}/approve
-     * @deprecated Use PUT /api/admin/activities/{id}/approve
      */
-    @Deprecated
     @PatchMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public ResponseEntity<APIResponse<ActivityReviewResponse>> approveActivity(@PathVariable String id) {
@@ -79,9 +88,7 @@ public class ManagerActivityController {
     /**
      * Reject activity.
      * Patch /api/manager/activities/{id}/reject
-     * @deprecated Use PUT /api/admin/activities/{id}/reject
      */
-    @Deprecated
     @PatchMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public ResponseEntity<APIResponse<Void>> rejectActivity(
@@ -96,11 +103,25 @@ public class ManagerActivityController {
     }
 
     /**
+     * Cancel an approved activity directly.
+     * PATCH /api/manager/activities/{id}/cancel
+     */
+    @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public ResponseEntity<APIResponse<ActivityResponse>> cancelApprovedActivity(
+            @PathVariable String id,
+            @Valid @RequestBody RejectActivityRequest request) {
+        return ResponseEntity.ok(APIResponse.<ActivityResponse>builder()
+                .code(1000)
+                .message("Da huy hoat dong")
+                .result(activityService.cancelApprovedActivityByManager(id, request.getReason()))
+                .build());
+    }
+
+    /**
      * Approve cancellation request.
      * PATCH /api/manager/activities/{id}/cancel-requests/approve
-     * @deprecated Use PUT /api/admin/activities/{id}/approve-cancel
      */
-    @Deprecated
     @PatchMapping("/{id}/cancel-requests/approve")
     @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
     public ResponseEntity<APIResponse<ActivityResponse>> approveCancelRequest(@PathVariable String id) {
@@ -156,6 +177,22 @@ public class ManagerActivityController {
     }
 
     /**
+     * Student participation and points statistics.
+     * GET /api/manager/activities/student-statistics?fromTime=2026-01-01T00:00:00&toTime=2026-12-31T23:59:59&className=D20CQCN01-B
+     */
+    @GetMapping("/student-statistics")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public APIResponse<StudentStatisticsResponse> getStudentStatistics(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toTime,
+            @RequestParam(required = false) String className,
+            @RequestParam(required = false) String department) {
+        return APIResponse.<StudentStatisticsResponse>builder()
+                .result(statisticsService.getStudentStatistics(fromTime, toTime, className, department))
+                .build();
+    }
+
+    /**
      * List post-activity reports.
      * GET /api/manager/activities/reports?activityId=...&reportStatus=Pending
      */
@@ -167,6 +204,20 @@ public class ManagerActivityController {
         return APIResponse.<List<ActivityFileResponse>>builder()
                 .result(activityService.searchReports(activityId, reportStatus))
                 .build();
+    }
+
+    /**
+     * Download a post-activity report and mark it as being reviewed.
+     * PATCH /api/manager/activities/reports/{reportId}/download
+     */
+    @PatchMapping("/reports/{reportId}/download")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public ResponseEntity<APIResponse<ActivityFileResponse>> downloadReport(@PathVariable String reportId) {
+        return ResponseEntity.ok(APIResponse.<ActivityFileResponse>builder()
+                .code(1000)
+                .message("Dang duyet bao cao sau hoat dong")
+                .result(activityService.startReportReview(reportId))
+                .build());
     }
 
     /**

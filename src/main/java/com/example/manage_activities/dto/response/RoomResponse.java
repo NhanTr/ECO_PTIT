@@ -7,23 +7,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class NotificationResponse {
+public class RoomResponse {
     String id;
-    String receiverId;
-    String receiverName;
-    String senderId;
-    String senderName;
-    String targetLabel;
-    String title;
-    String content;
-    Boolean isRead;
-    String type;
-    LocalDateTime createdAt;
+    String code;
+    String name;
+    String building;
+    Integer floor;
+    String status;
 }

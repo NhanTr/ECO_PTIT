@@ -21,9 +21,17 @@ public enum ReportStatus {
     }
 
     public static ReportStatus from(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        String normalized = value.trim();
+        if ("not_submitted".equalsIgnoreCase(normalized) || "not submitted".equalsIgnoreCase(normalized)) {
+            return NOT_SUBMITTED;
+        }
         return Arrays.stream(values())
-                .filter(status -> status.name().equalsIgnoreCase(value)
-                        || status.value.equalsIgnoreCase(value))
+                .filter(status -> status.name().equalsIgnoreCase(normalized)
+                        || status.value.equalsIgnoreCase(normalized))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Invalid report status: " + value));
     }

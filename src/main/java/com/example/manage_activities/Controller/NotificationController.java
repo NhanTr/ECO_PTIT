@@ -48,6 +48,36 @@ public class NotificationController {
     }
 
     /**
+     * Get notifications sent by current user.
+     * GET /api/notifications/sent
+     */
+    @GetMapping("/sent")
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER','ORGANIZER')")
+    public ResponseEntity<APIResponse<List<NotificationResponse>>> getSentNotifications() {
+        List<NotificationResponse> notifications = notificationService.getSentNotifications();
+        return ResponseEntity.ok(APIResponse.<List<NotificationResponse>>builder()
+                .code(1000)
+                .message("Lay danh sach thong bao da gui thanh cong")
+                .result(notifications)
+                .build());
+    }
+
+    /**
+     * Get notification detail for receiver or sender.
+     * GET /api/notifications/{id}
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<APIResponse<NotificationResponse>> getNotificationDetail(@PathVariable String id) {
+        NotificationResponse notification = notificationService.getNotificationDetail(id);
+        return ResponseEntity.ok(APIResponse.<NotificationResponse>builder()
+                .code(1000)
+                .message("Lay chi tiet thong bao thanh cong")
+                .result(notification)
+                .build());
+    }
+
+    /**
      * Mark current user's notification as read.
      * PATCH /api/notifications/{id}/read
      */

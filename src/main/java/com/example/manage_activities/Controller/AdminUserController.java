@@ -1,6 +1,5 @@
 package com.example.manage_activities.Controller;
 
-import com.example.manage_activities.dto.request.AssignRoleRequest;
 import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserUpdateRequest;
 import com.example.manage_activities.dto.response.APIResponse;
@@ -103,21 +102,4 @@ public class AdminUserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{userId}/role")
-    public APIResponse<UserResponse> assignRole(
-            @PathVariable String userId,
-            @Valid @RequestBody AssignRoleRequest request) {
-        return APIResponse.<UserResponse>builder()
-                .message("Da gan role chinh cho tai khoan")
-                .result(userService.assignPrimaryRole(userId, request.getRoleId()))
-                .build();
-    }
-
-    @DeleteMapping("/{userId}/role")
-    public APIResponse<UserResponse> revokeRole(@PathVariable String userId) {
-        return APIResponse.<UserResponse>builder()
-                .message("Da thu hoi role va dua tai khoan ve STUDENT")
-                .result(userService.revokePrimaryRole(userId))
-                .build();
-    }
 }

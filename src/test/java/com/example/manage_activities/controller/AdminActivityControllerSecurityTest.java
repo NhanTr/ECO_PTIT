@@ -1,9 +1,8 @@
 package com.example.manage_activities.controller;
 
 import com.example.manage_activities.Controller.AdminActivityController;
-import com.example.manage_activities.dto.request.RejectActivityRequest;
+import com.example.manage_activities.dto.request.AssignActivityRequest;
 import com.example.manage_activities.dto.response.ActivityResponse;
-import com.example.manage_activities.dto.response.ActivityReviewResponse;
 import com.example.manage_activities.dto.response.ActivityScheduleConflictResponse;
 import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.exception.GlobalExceptionHandler;
@@ -30,7 +29,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,6 +45,7 @@ class AdminActivityControllerSecurityTest {
 
     private static final String BASE_URL = "/api/admin/activities";
     private static final String ACTIVITY_ID = "ACT1234567";
+    private static final String REVIEWER_ID = "MAN1234567";
 
     @Autowired
     MockMvc mockMvc;
@@ -58,7 +57,7 @@ class AdminActivityControllerSecurityTest {
     ActivityService activityService;
 
     @Nested
-    @DisplayName("ADMIN / MANAGER — authorized")
+    @DisplayName("ADMIN / MANAGER authorized")
     class AuthorizedRoleTests {
 
         @Test
@@ -110,68 +109,29 @@ class AdminActivityControllerSecurityTest {
 
         @Test
         @WithMockUser(username = "admin-caller", roles = "ADMIN")
-        void adminApprove_returnsOkWithReviewResponse() throws Exception {
-            ActivityReviewResponse review = ActivityReviewResponse.builder()
-                    .activity(sampleActivity(ACTIVITY_ID))
-                    .scheduleConflicts(List.of())
+        void adminAssignActivity_returnsOk() throws Exception {
+            AssignActivityRequest request = AssignActivityRequest.builder()
+                    .reviewerId(REVIEWER_ID)
                     .build();
-            when(activityService.approveActivityWithWarnings(ACTIVITY_ID)).thenReturn(review);
+            ActivityResponse activity = sampleActivity(ACTIVITY_ID);
+            activity.setReviewerId(REVIEWER_ID);
 
-            mockMvc.perform(put(BASE_URL + "/" + ACTIVITY_ID + "/approve"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value(200))
-                    .andExpect(jsonPath("$.message").value("Hoat dong da duoc duyet"))
-                    .andExpect(jsonPath("$.result.activity.id").value(ACTIVITY_ID))
-                    .andExpect(jsonPath("$.result.scheduleConflicts").isArray());
+            when(activityService.assignReviewer(ACTIVITY_ID, REVIEWER_ID)).thenReturn(activity);
 
-            verify(activityService).approveActivityWithWarnings(ACTIVITY_ID);
-        }
-
-        @Test
-        @WithMockUser(username = "manager-caller", roles = "MANAGER")
-        void managerReject_returnsOkWithActivity() throws Exception {
-            RejectActivityRequest request = RejectActivityRequest.builder()
-                    .rejectReason("Khong du dieu kien to chuc")
-                    .build();
-            ActivityResponse rejected = sampleActivity(ACTIVITY_ID);
-            rejected.setStatus("Rejected");
-            rejected.setRejectReason("Khong du dieu kien to chuc");
-
-            when(activityService.rejectActivity(eq(ACTIVITY_ID), eq("Khong du dieu kien to chuc")))
-                    .thenReturn(rejected);
-
-            mockMvc.perform(put(BASE_URL + "/" + ACTIVITY_ID + "/reject")
+            mockMvc.perform(put(BASE_URL + "/" + ACTIVITY_ID + "/assign")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(200))
-                    .andExpect(jsonPath("$.message").value("Da tu choi hoat dong"))
-                    .andExpect(jsonPath("$.result.id").value(ACTIVITY_ID))
-                    .andExpect(jsonPath("$.result.rejectReason").value("Khong du dieu kien to chuc"));
+                    .andExpect(jsonPath("$.message").value("Da phan cong nguoi phu trach hoat dong"))
+                    .andExpect(jsonPath("$.result.reviewerId").value(REVIEWER_ID));
 
-            verify(activityService).rejectActivity(ACTIVITY_ID, "Khong du dieu kien to chuc");
-        }
-
-        @Test
-        @WithMockUser(username = "admin-caller", roles = "ADMIN")
-        void adminApproveCancel_returnsOk() throws Exception {
-            ActivityResponse cancelled = sampleActivity(ACTIVITY_ID);
-            cancelled.setStatus("Cancelled");
-
-            when(activityService.approveCancelRequest(ACTIVITY_ID)).thenReturn(cancelled);
-
-            mockMvc.perform(put(BASE_URL + "/" + ACTIVITY_ID + "/approve-cancel"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value(200))
-                    .andExpect(jsonPath("$.message").value("Da duyet yeu cau huy hoat dong"))
-                    .andExpect(jsonPath("$.result.status").value("Cancelled"));
-
-            verify(activityService).approveCancelRequest(ACTIVITY_ID);
+            verify(activityService).assignReviewer(ACTIVITY_ID, REVIEWER_ID);
         }
     }
 
     @Nested
-    @DisplayName("STUDENT / ORGANIZER — forbidden")
+    @DisplayName("STUDENT / ORGANIZER forbidden")
     class UnauthorizedRoleTests {
 
         @Test
@@ -189,43 +149,6 @@ class AdminActivityControllerSecurityTest {
             mockMvc.perform(get(BASE_URL))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value(ErrorCode.UNAUTHORIZED.getCode()));
-        }
-
-        @Test
-        @WithMockUser(username = "student-caller", roles = "STUDENT")
-        void studentApprove_returnsForbidden() throws Exception {
-            mockMvc.perform(put(BASE_URL + "/" + ACTIVITY_ID + "/approve"))
-                    .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value(ErrorCode.UNAUTHORIZED.getCode()))
-                    .andExpect(jsonPath("$.message").value(ErrorCode.UNAUTHORIZED.getMessage()));
-        }
-
-        @Test
-        @WithMockUser(username = "organizer-caller", roles = "ORGANIZER")
-        void organizerApprove_returnsForbidden() throws Exception {
-            mockMvc.perform(put(BASE_URL + "/" + ACTIVITY_ID + "/approve"))
-                    .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value(ErrorCode.UNAUTHORIZED.getCode()));
-        }
-    }
-
-    @Nested
-    @DisplayName("Validation")
-    class ValidationTests {
-
-        @Test
-        @WithMockUser(username = "manager-caller", roles = "MANAGER")
-        void rejectWithBlankReason_returnsBadRequest() throws Exception {
-            RejectActivityRequest request = RejectActivityRequest.builder()
-                    .rejectReason("")
-                    .build();
-
-            mockMvc.perform(put(BASE_URL + "/" + ACTIVITY_ID + "/reject")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value(ErrorCode.BAD_REQUEST.getCode()))
-                    .andExpect(jsonPath("$.message").value(ErrorCode.BAD_REQUEST.getMessage()));
         }
     }
 

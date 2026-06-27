@@ -1,6 +1,7 @@
 package com.example.manage_activities.repository;
 
 import com.example.manage_activities.entity.Registration;
+import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.enums.RegistrationStatus;
 import com.example.manage_activities.repository.projection.ActivityRegistrationCountProjection;
 import com.example.manage_activities.repository.projection.StudentStatisticsProjection;
@@ -38,6 +39,29 @@ public interface RegistrationRepository extends JpaRepository<Registration, Stri
     List<ActivityRegistrationCountProjection> countRegistrationsByActivityIds(
             @Param("activityIds") Collection<String> activityIds,
             @Param("statuses") Collection<RegistrationStatus> statuses);
+
+    @Query("""
+            SELECT r
+            FROM Registration r, Activity a
+            WHERE r.studentId = :studentId
+              AND a.id = r.activityId
+              AND r.activityId <> :activityId
+              AND r.status IN :registrationStatuses
+              AND a.status IN :activityStatuses
+              AND a.startTime IS NOT NULL
+              AND a.endTime IS NOT NULL
+              AND :startTime IS NOT NULL
+              AND :endTime IS NOT NULL
+              AND a.startTime < :endTime
+              AND a.endTime > :startTime
+            """)
+    List<Registration> findStudentScheduleConflicts(
+            @Param("studentId") String studentId,
+            @Param("activityId") String activityId,
+            @Param("registrationStatuses") Collection<RegistrationStatus> registrationStatuses,
+            @Param("activityStatuses") Collection<ActivityStatus> activityStatuses,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
 
     @Query("""
             SELECT u.id AS studentId,

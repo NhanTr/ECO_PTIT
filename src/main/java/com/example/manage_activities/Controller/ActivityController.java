@@ -8,6 +8,7 @@ import com.example.manage_activities.dto.response.APIResponse;
 import com.example.manage_activities.dto.response.ActivityFileResponse;
 import com.example.manage_activities.dto.response.ActivityResponse;
 import com.example.manage_activities.dto.response.ActivityReviewResponse;
+import com.example.manage_activities.dto.response.ActivityScheduleConflictResponse;
 import com.example.manage_activities.dto.response.ClubStatisticsResponse;
 import com.example.manage_activities.service.ActivityService;
 import jakarta.validation.Valid;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -97,6 +99,21 @@ public class ActivityController {
     }
 
     /**
+     * Preview schedule conflicts before creating an activity.
+     * GET /api/v1/activities/schedule-conflicts?roomId=A01&startTime=...&endTime=...
+     */
+    @GetMapping("/schedule-conflicts")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
+    public APIResponse<List<ActivityScheduleConflictResponse>> previewScheduleConflicts(
+            @RequestParam String roomId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+        return APIResponse.<List<ActivityScheduleConflictResponse>>builder()
+                .result(activityService.previewScheduleConflicts(roomId, startTime, endTime))
+                .build();
+    }
+
+    /**
      * Request cancellation for an approved activity.
      * PATCH /api/v1/activities/{id}/cancel-request
      */
@@ -120,6 +137,47 @@ public class ActivityController {
             @Valid @RequestBody ActivityReportRequest request) {
         log.info("Submit report request received for activity ID: {}", id);
         return ResponseEntity.status(HttpStatus.CREATED).body(activityService.submitReport(id, request));
+    }
+
+    /**
+     * Upload an Excel report file after the activity is closed.
+     * POST /api/v1/activities/{id}/reports/upload
+     */
+    @PostMapping("/{id}/reports/upload")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
+    public ResponseEntity<ActivityFileResponse> uploadReport(
+            @PathVariable String id,
+            @RequestParam("file") MultipartFile file) {
+        log.info("Upload report file request received for activity ID: {}", id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(activityService.submitReportFile(id, file));
+    }
+
+    /**
+     * List reports submitted for activities owned by the current organizer.
+     * GET /api/v1/activities/reports/my?activityId=...&reportStatus=Pending
+     */
+    @GetMapping("/reports/my")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
+    public APIResponse<List<ActivityFileResponse>> getMyReports(
+            @RequestParam(required = false) String activityId,
+            @RequestParam(required = false) String reportStatus) {
+        return APIResponse.<List<ActivityFileResponse>>builder()
+                .result(activityService.searchMyReports(activityId, reportStatus))
+                .build();
+    }
+
+    /**
+     * Cancel a submitted report while it is pending or already approved.
+     * PATCH /api/v1/activities/reports/{reportId}/cancel
+     */
+    @PatchMapping("/reports/{reportId}/cancel")
+    @PreAuthorize("hasAnyRole('ORGANIZER','ADMIN')")
+    public ResponseEntity<APIResponse<ActivityFileResponse>> cancelReport(@PathVariable String reportId) {
+        return ResponseEntity.ok(APIResponse.<ActivityFileResponse>builder()
+                .code(1000)
+                .message("Da huy nop bao cao")
+                .result(activityService.cancelMyReport(reportId))
+                .build());
     }
 
     /**

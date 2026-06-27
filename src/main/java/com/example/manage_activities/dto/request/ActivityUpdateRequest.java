@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 public class ActivityUpdateRequest {
     String title;
     String description;
+    String roomId;
     String location;
     LocalDateTime startTime;
     LocalDateTime endTime;

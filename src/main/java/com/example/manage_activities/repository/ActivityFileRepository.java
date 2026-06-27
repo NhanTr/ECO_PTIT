@@ -25,4 +25,18 @@ public interface ActivityFileRepository extends JpaRepository<ActivityFile, Stri
     List<ActivityFile> searchReports(
             @Param("activityId") String activityId,
             @Param("reportStatus") ReportStatus reportStatus);
+
+    @Query("""
+            SELECT f FROM ActivityFile f, Activity a
+            WHERE f.fileType = 'Report'
+              AND a.id = f.activityId
+              AND a.organizerId = :organizerId
+              AND (:activityId IS NULL OR f.activityId = :activityId)
+              AND (:reportStatus IS NULL OR f.reportStatus = :reportStatus)
+            ORDER BY f.uploadedAt DESC
+            """)
+    List<ActivityFile> searchReportsByOrganizer(
+            @Param("organizerId") String organizerId,
+            @Param("activityId") String activityId,
+            @Param("reportStatus") ReportStatus reportStatus);
 }

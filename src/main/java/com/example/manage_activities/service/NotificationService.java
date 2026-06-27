@@ -43,6 +43,28 @@ public class NotificationService {
 				.toList();
 	}
 
+	public List<NotificationResponse> getSentNotifications() {
+		String userId = getCurrentUserId();
+		log.info("Getting sent notifications for user: {}", userId);
+
+		return notificationRepository.findBySenderIdOrderByCreatedAtDesc(userId)
+				.stream()
+				.map(this::toResponse)
+				.toList();
+	}
+
+	public NotificationResponse getNotificationDetail(String notificationId) {
+		String userId = getCurrentUserId();
+		Notification notification = notificationRepository.findById(notificationId)
+				.orElseThrow(() -> new AppException(ErrorCode.NOTIFICATION_NOT_FOUND));
+
+		if (!userId.equals(notification.getReceiverId()) && !userId.equals(notification.getSenderId())) {
+			throw new AppException(ErrorCode.UNAUTHORIZED);
+		}
+
+		return toResponse(notification);
+	}
+
 	@Transactional
 	public int sendNotificationsToStudents(NotificationCreateRequest request) {
 		return sendNotifications(request);
@@ -53,6 +75,8 @@ public class NotificationService {
 		Integer roleId = request.getRoleId();
 		String department = normalizeFilter(request.getDepartment());
 		String className = normalizeFilter(request.getClassName());
+		String senderId = getCurrentUserId();
+		String targetLabel = buildBroadcastTargetLabel(roleId, department, className);
 
 		List<User> recipients = userRepository.findBroadcastRecipients(roleId, department, className);
 		if (recipients.isEmpty()) {
@@ -71,6 +95,8 @@ public class NotificationService {
 				.map(user -> Notification.builder()
 						.id(generateNotificationId())
 						.receiverId(user.getId())
+						.senderId(senderId)
+						.targetLabel(targetLabel)
 						.title(request.getTitle())
 						.content(request.getContent())
 						.type("System")
@@ -101,6 +127,8 @@ public class NotificationService {
 		Notification notification = Notification.builder()
 				.id(generateNotificationId())
 				.receiverId(receiverId)
+				.senderId(getCurrentUserId())
+				.targetLabel(receiverId)
 				.title(title)
 				.content(content)
 				.type(type)
@@ -123,10 +151,14 @@ public class NotificationService {
 		}
 
 		LocalDateTime now = LocalDateTime.now();
+		String senderId = getCurrentUserId();
+		String targetLabel = buildManualTargetLabel(request.getRecipientIds());
 		List<Notification> notifications = recipients.stream()
 				.map(user -> Notification.builder()
 						.id(generateNotificationId())
 						.receiverId(user.getId())
+						.senderId(senderId)
+						.targetLabel(targetLabel)
 						.title(request.getTitle())
 						.content(request.getContent())
 						.type(request.getType())
@@ -143,7 +175,7 @@ public class NotificationService {
 	private List<User> resolveRecipients(NotificationCreateRequest request) {
 		List<String> recipientIds = request.getRecipientIds();
 
-		if ("System".equalsIgnoreCase(request.getType()) || recipientIds == null || recipientIds.isEmpty()) {
+		if (recipientIds == null || recipientIds.isEmpty()) {
 			return userRepository.findAll();
 		}
 		return userRepository.findByIdIn(recipientIds);
@@ -159,10 +191,11 @@ public class NotificationService {
 			throw new AppException(ErrorCode.UNAUTHENTICATED);
 		}
 
-		boolean isAdmin = authentication.getAuthorities().stream()
-				.anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+		boolean canSendSystemNotification = authentication.getAuthorities().stream()
+				.anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority())
+						|| "ROLE_MANAGER".equals(authority.getAuthority()));
 
-		if (!isAdmin) {
+		if (!canSendSystemNotification) {
 			throw new AppException(ErrorCode.UNAUTHORIZED);
 		}
 	}
@@ -182,19 +215,39 @@ public class NotificationService {
 	}
 
 	@Transactional
-	public void sendParticipationRejectedNotification(String studentId, String activityId, String reason) {
+	public void sendParticipationApprovedNotification(String studentId, String activityTitle) {
 		Notification notification = Notification.builder()
 				.id(generateNotificationId())
 				.receiverId(studentId)
-				.title("Dang ky hoat dong bi tu choi")
-				.content("Dang ky tham gia hoat dong " + activityId + " bi tu choi. Ly do: " + reason)
+				.senderId(getCurrentUserId())
+				.targetLabel(studentId)
+				.title("Dang ky hoat dong da duoc duyet")
+				.content("Dang ky tham gia hoat dong " + activityTitle + " da duoc duyet.")
 				.type("Activity")
 				.isRead(false)
 				.createdAt(LocalDateTime.now())
 				.build();
 
 		notificationRepository.save(notification);
-		log.info("Sent rejection notification to student: {} for activity: {}", studentId, activityId);
+		log.info("Sent approval notification to student: {} for activity: {}", studentId, activityTitle);
+	}
+
+	@Transactional
+	public void sendParticipationRejectedNotification(String studentId, String activityTitle, String reason) {
+		Notification notification = Notification.builder()
+				.id(generateNotificationId())
+				.receiverId(studentId)
+				.senderId(getCurrentUserId())
+				.targetLabel(studentId)
+				.title("Dang ky hoat dong bi tu choi")
+				.content("Dang ky tham gia hoat dong " + activityTitle + " bi tu choi. Ly do: " + reason)
+				.type("Activity")
+				.isRead(false)
+				.createdAt(LocalDateTime.now())
+				.build();
+
+		notificationRepository.save(notification);
+		log.info("Sent rejection notification to student: {} for activity: {}", studentId, activityTitle);
 	}
 
 	private String generateNotificationId() {
@@ -234,11 +287,59 @@ public class NotificationService {
 		return NotificationResponse.builder()
 				.id(notification.getId())
 				.receiverId(notification.getReceiverId())
+				.receiverName(resolveUserName(notification.getReceiverId()))
+				.senderId(notification.getSenderId())
+				.senderName(resolveUserName(notification.getSenderId()))
+				.targetLabel(notification.getTargetLabel())
 				.title(notification.getTitle())
 				.content(notification.getContent())
 				.isRead(notification.getIsRead())
 				.type(notification.getType())
 				.createdAt(notification.getCreatedAt())
 				.build();
+	}
+
+	private String resolveUserName(String userId) {
+		if (userId == null || userId.isBlank()) {
+			return "System";
+		}
+		if ("system".equalsIgnoreCase(userId)) {
+			return "System";
+		}
+		return userRepository.findById(userId)
+				.map(user -> {
+					if (user.getUsername() != null && !user.getUsername().isBlank()) {
+						return user.getUsername();
+					}
+					if (user.getEmail() != null && !user.getEmail().isBlank()) {
+						return user.getEmail();
+					}
+					return user.getId();
+				})
+				.orElse(userId);
+	}
+
+	private String buildManualTargetLabel(List<String> recipientIds) {
+		if (recipientIds == null || recipientIds.isEmpty()) {
+			return "Tat ca nguoi dung";
+		}
+		return String.join(", ", recipientIds);
+	}
+
+	private String buildBroadcastTargetLabel(Integer roleId, String department, String className) {
+		return roleLabel(roleId);
+	}
+
+	private String roleLabel(Integer roleId) {
+		if (roleId == null) {
+			return "Tất cả vai trò";
+		}
+		return switch (roleId) {
+			case 1 -> "admin";
+			case 2 -> "manager";
+			case 3 -> "organizer";
+			case 4 -> "student";
+			default -> "Role " + roleId;
+		};
 	}
 }

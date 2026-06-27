@@ -25,6 +25,9 @@ public class ActivityCreateRequest {
 
     String description;
 
+    @NotBlank(message = "Room is required")
+    String roomId;
+
     String location;
 
     @NotNull(message = "Start time is required")

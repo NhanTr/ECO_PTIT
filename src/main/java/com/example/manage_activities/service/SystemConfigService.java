@@ -71,6 +71,7 @@ public class SystemConfigService {
     @Transactional
     public SystemConfigResponse updateConfig(String key, SystemConfigRequest request) {
         ensureDefaults();
+        ensureConfigCanBeUpdated(key);
         validateValue(key, request.getValue());
         SystemConfig config = systemConfigRepository.findById(key)
                 .orElseGet(() -> SystemConfig.builder().key(key).build());
@@ -114,6 +115,12 @@ public class SystemConfigService {
             if (parsedValue < 0) {
                 throw new AppException(ErrorCode.BAD_REQUEST);
             }
+        }
+    }
+
+    private void ensureConfigCanBeUpdated(String key) {
+        if (ACTIVITY_LIFECYCLE_STATUSES.equals(key)) {
+            throw new AppException(ErrorCode.BAD_REQUEST);
         }
     }
 

@@ -5,7 +5,9 @@ import com.example.manage_activities.dto.response.StudentActivityHistoryResponse
 import com.example.manage_activities.dto.response.StudentPointsResponse;
 import com.example.manage_activities.entity.Activity;
 import com.example.manage_activities.entity.Attendance;
+import com.example.manage_activities.entity.Profile;
 import com.example.manage_activities.entity.Registration;
+import com.example.manage_activities.entity.User;
 import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.enums.RegistrationStatus;
 import com.example.manage_activities.exception.AppException;
@@ -13,7 +15,9 @@ import com.example.manage_activities.exception.ErrorCode;
 import com.example.manage_activities.mapper.RegistrationMapper;
 import com.example.manage_activities.repository.ActivityRepository;
 import com.example.manage_activities.repository.AttendanceRepository;
+import com.example.manage_activities.repository.ProfileRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
+import com.example.manage_activities.repository.UserRepository;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -39,12 +43,16 @@ public class RegistrationService {
 
     private static final List<RegistrationStatus> ACTIVE_REGISTRATION_STATUSES =
             List.of(RegistrationStatus.PENDING, RegistrationStatus.APPROVED);
+    private static final List<ActivityStatus> STUDENT_CONFLICT_ACTIVITY_STATUSES =
+            List.of(ActivityStatus.APPROVED, ActivityStatus.ONGOING);
 
     RegistrationRepository registrationRepository;
     RegistrationMapper registrationMapper;
     NotificationService notificationService;
     ActivityRepository activityRepository;
     AttendanceRepository attendanceRepository;
+    UserRepository userRepository;
+    ProfileRepository profileRepository;
     SystemLogService systemLogService;
     SystemConfigService systemConfigService;
 
@@ -74,6 +82,7 @@ public class RegistrationService {
             registration.setApprovedBy(null);
             registration.setApprovedAt(null);
             registration.setCancelledAt(null);
+            registration.setRejectReason(null);
             registration.setCreatedAt(LocalDateTime.now());
         } else {
             registration = new Registration();
@@ -83,6 +92,8 @@ public class RegistrationService {
             registration.setStatus(RegistrationStatus.PENDING);
             registration.setCreatedAt(LocalDateTime.now());
         }
+
+        validateStudentScheduleConflict(activity, userId);
 
         Registration savedRegistration = registrationRepository.save(registration);
         refreshActivityParticipantCount(activity);
@@ -203,11 +214,15 @@ public class RegistrationService {
             throw new AppException(ErrorCode.BAD_REQUEST);
         }
 
+        validateStudentScheduleConflict(activity, studentId);
+
         registration.setStatus(RegistrationStatus.APPROVED);
         registration.setApprovedBy(getCurrentUserId());
         registration.setApprovedAt(LocalDateTime.now());
+        registration.setRejectReason(null);
         Registration savedRegistration = registrationRepository.save(registration);
         refreshActivityParticipantCount(activity);
+        notificationService.sendParticipationApprovedNotification(studentId, activity.getTitle());
         systemLogService.logAction(getCurrentUserId(), "APPROVE_REGISTRATION", "registrations",
                 "registrationId=" + registration.getId() + ", status=Pending",
                 "registrationId=" + registration.getId() + ", status=Approved");
@@ -250,12 +265,13 @@ public class RegistrationService {
         registration.setStatus(RegistrationStatus.REJECTED);
         registration.setApprovedBy(null);
         registration.setApprovedAt(null);
+        registration.setRejectReason(reason);
         registrationRepository.save(registration);
         refreshActivityParticipantCount(activity);
 
         notificationService.sendParticipationRejectedNotification(
                 registration.getStudentId(),
-                registration.getActivityId(),
+                activity.getTitle(),
                 reason
         );
         systemLogService.logAction(getCurrentUserId(), "REJECT_REGISTRATION", "registrations",
@@ -282,18 +298,42 @@ public class RegistrationService {
         }
     }
 
+    private void validateStudentScheduleConflict(Activity activity, String studentId) {
+        List<Registration> conflicts = registrationRepository.findStudentScheduleConflicts(
+                studentId,
+                activity.getId(),
+                ACTIVE_REGISTRATION_STATUSES,
+                STUDENT_CONFLICT_ACTIVITY_STATUSES,
+                activity.getStartTime(),
+                activity.getEndTime());
+
+        if (!conflicts.isEmpty()) {
+            throw new AppException(ErrorCode.STUDENT_ACTIVITY_TIME_CONFLICT);
+        }
+    }
+
     private void validateCancellationRule(Activity activity, Registration registration) {
         if (!ACTIVE_REGISTRATION_STATUSES.contains(registration.getStatus())) {
             throw new AppException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
         }
 
-        if (activity.getStartTime() != null) {
-            int cancelDeadlineHours = systemConfigService.getIntValue(
-                    SystemConfigService.REGISTRATION_CANCEL_DEADLINE_HOURS, 24);
-            LocalDateTime cancellationDeadline = activity.getStartTime().minusHours(cancelDeadlineHours);
-            if (!LocalDateTime.now().isBefore(cancellationDeadline)) {
-                throw new AppException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
-            }
+        if (ActivityStatus.ONGOING.equals(activity.getStatus())
+                || ActivityStatus.CLOSED.equals(activity.getStatus())
+                || ActivityStatus.CANCELLED.equals(activity.getStatus())) {
+            throw new AppException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
+        }
+
+        if (activity.getStartTime() == null) {
+            return;
+        }
+
+        int cancelDeadlineHours = systemConfigService.getIntValue(
+                SystemConfigService.REGISTRATION_CANCEL_DEADLINE_HOURS,
+                24);
+        LocalDateTime cancellationDeadline = activity.getStartTime().minusHours(cancelDeadlineHours);
+        LocalDateTime now = LocalDateTime.now();
+        if (!now.isBefore(cancellationDeadline)) {
+            throw new AppException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
         }
     }
 
@@ -346,6 +386,20 @@ public class RegistrationService {
 
     private RegistrationResponse toRegistrationResponse(Registration registration, Attendance attendance) {
         RegistrationResponse response = registrationMapper.toDTO(registration);
+        if (response == null) {
+            return null;
+        }
+        User student = userRepository.findById(registration.getStudentId()).orElse(null);
+        Profile profile = profileRepository.findByUserId(registration.getStudentId());
+        if (student != null) {
+            response.setStudentEmail(student.getEmail());
+        }
+        if (profile != null) {
+            response.setStudentName(profile.getFullName());
+            response.setStudentCode(profile.getStudentCode());
+            response.setClassName(profile.getClassName());
+            response.setDepartment(profile.getDepartment());
+        }
         if (attendance == null) {
             return response;
         }

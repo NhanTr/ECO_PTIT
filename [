@@ -1,0 +1,30 @@
+feat: activity status
+
+# Conflicts:
+#	src/main/java/com/example/manage_activities/dto/request/RejectActivityRequest.java
+#	src/main/java/com/example/manage_activities/service/ActivityService.java
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# interactive rebase in progress; onto 8fcee9e
+# Last command done (1 command done):
+#    pick cfa6989 # feat: activity status
+# No commands remaining.
+# You are currently editing a commit while rebasing branch 'feature/user-organizer' on '8fcee9e'.
+#
+# Changes to be committed:
+#	modified:   src/main/java/com/example/manage_activities/Controller/ManagerActivityController.java
+#	modified:   src/main/java/com/example/manage_activities/enums/ActivityStatus.java
+#	modified:   src/main/java/com/example/manage_activities/enums/ActivityStatusConverter.java
+#	modified:   src/main/java/com/example/manage_activities/enums/RegistrationStatus.java
+#	modified:   src/main/java/com/example/manage_activities/enums/RegistrationStatusConverter.java
+#	modified:   src/main/java/com/example/manage_activities/enums/ReportStatus.java
+#	modified:   src/main/java/com/example/manage_activities/enums/ReportStatusConverter.java
+#	modified:   src/main/java/com/example/manage_activities/service/ActivityService.java
+#	modified:   src/main/java/com/example/manage_activities/service/ProfileService.java
+#	modified:   src/test/java/com/example/manage_activities/service/ActivityServiceTest.java
+#
+# Untracked files:
+#	~$ng_yeu_cau_chuc_nang_nghiep_vu.docx
+#

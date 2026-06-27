@@ -20,6 +20,8 @@ public class ActivityResponse {
     String id;
     String title;
     String description;
+    String roomId;
+    String roomCode;
     String location;
     LocalDateTime startTime;
     LocalDateTime endTime;
@@ -35,6 +37,7 @@ public class ActivityResponse {
     String cancelReason;
     String rejectReason;
     String organizerId;
+    String organizerName;
     String reviewerId;
     LocalDateTime createdAt;
 }

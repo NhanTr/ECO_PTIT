@@ -6,6 +6,7 @@ public enum ActivityStatus {
     DRAFT("Draft"),
     PENDING("Pending"),
     REVIEWING("Reviewing"),
+    CANCELLATION_REQUESTED("CancellationRequested"),
     APPROVED("Approved"),
     ONGOING("Ongoing"),
     CLOSED("Closed"),
@@ -23,12 +24,26 @@ public enum ActivityStatus {
     }
 
     public static ActivityStatus from(String value) {
-        if (value != null && "completed".equalsIgnoreCase(value.trim())) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        String normalized = value.trim();
+        if ("completed".equalsIgnoreCase(normalized)) {
             return CLOSED;
         }
+        if ("upcoming".equalsIgnoreCase(normalized)) {
+            return APPROVED;
+        }
+        if ("cancellation_requested".equalsIgnoreCase(normalized)
+                || "cancellation requested".equalsIgnoreCase(normalized)
+                || "cancelrequested".equalsIgnoreCase(normalized)
+                || "cancel requested".equalsIgnoreCase(normalized)) {
+            return CANCELLATION_REQUESTED;
+        }
         return Arrays.stream(values())
-                .filter(status -> status.name().equalsIgnoreCase(value)
-                        || status.value.equalsIgnoreCase(value))
+                .filter(status -> status.name().equalsIgnoreCase(normalized)
+                        || status.value.equalsIgnoreCase(normalized))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Invalid activity status: " + value));
     }
