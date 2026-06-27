@@ -1,11 +1,14 @@
 package com.example.manage_activities.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
 
@@ -26,6 +29,13 @@ public class Notification {
 
     @Column(name = "sender_id", length = 10)
     String senderId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    User sender;
 
     @Column(name = "target_label", columnDefinition = "TEXT")
     String targetLabel;

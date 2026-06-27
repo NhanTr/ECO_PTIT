@@ -13,6 +13,7 @@ public interface RegistrationMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "studentId", ignore = true)
     @Mapping(target = "approvedBy", ignore = true)
+    @Mapping(target = "approver", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "rejectReason", ignore = true)
     @Mapping(target = "approvedAt", ignore = true)

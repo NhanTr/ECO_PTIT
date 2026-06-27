@@ -1,12 +1,15 @@
 package com.example.manage_activities.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.example.manage_activities.enums.ReportStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
 
@@ -28,8 +31,22 @@ public class ActivityFile {
     @Column(name = "reviewer_id", length = 10)
     String reviewerId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewer_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    User reviewer;
+
     @Column(name = "uploaded_by", length = 10)
     String uploadedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "uploaded_by", referencedColumnName = "id", insertable = false, updatable = false)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    User uploader;
 
     ReportStatus reportStatus;
     String fileUrl;

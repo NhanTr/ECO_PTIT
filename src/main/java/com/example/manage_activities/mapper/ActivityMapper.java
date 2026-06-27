@@ -19,6 +19,9 @@ public interface ActivityMapper {
     @Mapping(target = "cancelReason", ignore = true)
     @Mapping(target = "rejectReason", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "reviewer", ignore = true)
+    @Mapping(target = "room", ignore = true)
+    @Mapping(target = "roomByCode", ignore = true)
     Activity toEntity(ActivityCreateRequest request);
     
     // Convert Activity entity to response DTO

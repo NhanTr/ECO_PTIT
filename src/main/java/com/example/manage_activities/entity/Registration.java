@@ -1,12 +1,15 @@
 package com.example.manage_activities.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.example.manage_activities.enums.RegistrationStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
 
@@ -30,6 +33,13 @@ public class Registration {
 
     @Column(name = "approved_by", length = 10)
     String approvedBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approved_by", referencedColumnName = "id", insertable = false, updatable = false)
+    @JsonIgnore
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    User approver;
 
     RegistrationStatus status;
 

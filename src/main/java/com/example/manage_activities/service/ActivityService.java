@@ -1020,6 +1020,7 @@ public class ActivityService {
         }
 
         activity.setRoomId(room.getId());
+        activity.setRoom(room);
         activity.setRoomCode(room.getCode());
         activity.setLocation(room.getCode());
     }
