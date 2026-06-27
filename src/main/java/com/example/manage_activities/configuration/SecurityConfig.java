@@ -56,8 +56,6 @@ public class SecurityConfig {
             .requestMatchers("/api/admin/users/*/assign-role", "/api/admin/users/*/revoke-role").hasRole("ADMIN")
                 // QTHT #7 — categories management (admin only)
             .requestMatchers("/api/admin/categories/**").hasRole("ADMIN")
-                // QTHT #8 — notification channels & templates (admin only)
-            .requestMatchers("/api/admin/notification-channels/**", "/api/admin/notification-templates/**").hasRole("ADMIN")
                 // QTHT #9 — academic periods (admin only)
             .requestMatchers("/api/admin/academic-periods/**").hasRole("ADMIN")
                 // QTHT #10 — dynamic permissions (admin only)
