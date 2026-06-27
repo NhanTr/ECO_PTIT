@@ -37,7 +37,7 @@ public class AdminNotificationController {
         log.info("Broadcast notification title={}, roleId={}, className={}, department={}",
                 request.getTitle(), request.getRoleId(), request.getClassName(), request.getDepartment());
         return APIResponse.<NotificationBroadcastResponse>builder()
-                .message("Da gui thong bao hang loat")
+                .message("Đã gửi thông báo hàng loạt")
                 .result(notificationService.broadcastNotifications(request))
                 .build();
     }
