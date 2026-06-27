@@ -199,18 +199,16 @@ public class SystemStatisticsService {
         String escapedText = text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
                 .replace("\n", ") Tj T* (");
         String stream = "BT /F1 12 Tf 50 760 Td (" + escapedText + ") Tj ET";
-        String pdf = """
-                %PDF-1.4
-                1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
-                2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
-                3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj
-                4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
-                5 0 obj << /Length %d >> stream
-                %s
-                endstream endobj
-                trailer << /Root 1 0 R >>
-                %%EOF
-                """.formatted(stream.length(), stream);
+        String pdf = "%PDF-1.4\n" +
+                "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n" +
+                "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n" +
+                "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj\n" +
+                "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n" +
+                "5 0 obj << /Length " + stream.length() + " >> stream\n" +
+                stream + "\n" +
+                "endstream endobj\n" +
+                "trailer << /Root 1 0 R >>\n" +
+                "%%EOF\n";
         return pdf.getBytes(StandardCharsets.UTF_8);
     }
 }
