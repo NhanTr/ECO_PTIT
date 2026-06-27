@@ -63,14 +63,19 @@ class RegistrationServiceTest {
         when(registrationRepository.findByActivityIdAndStudentId("act1234567", "std1234567"))
                 .thenReturn(Optional.of(registration));
         when(activityRepository.findById("act1234567"))
-                .thenReturn(Optional.of(Activity.builder().id("act1234567").organizerId("org1234567").build()));
+                .thenReturn(Optional.of(Activity.builder()
+                        .id("act1234567")
+                        .title("Ngay hoi viec lam")
+                        .organizerId("org1234567")
+                        .build()));
         when(registrationRepository.save(any(Registration.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         registrationService.rejectRegistration("act1234567", "std1234567", "Khong du dieu kien");
 
         assertEquals(RegistrationStatus.REJECTED, registration.getStatus());
+        assertEquals("Khong du dieu kien", registration.getRejectReason());
         verify(registrationRepository).save(registration);
-        verify(notificationService).sendParticipationRejectedNotification("std1234567", "act1234567", "Khong du dieu kien");
+        verify(notificationService).sendParticipationRejectedNotification("std1234567", "Ngay hoi viec lam", "Khong du dieu kien");
     }
 
     @Test
@@ -86,7 +91,11 @@ class RegistrationServiceTest {
         when(registrationRepository.findByActivityIdAndStudentId("act1234567", "std1234567"))
                 .thenReturn(Optional.of(registration));
         when(activityRepository.findById("act1234567"))
-                .thenReturn(Optional.of(Activity.builder().id("act1234567").organizerId("org1234567").build()));
+                .thenReturn(Optional.of(Activity.builder()
+                        .id("act1234567")
+                        .title("Ngay hoi viec lam")
+                        .organizerId("org1234567")
+                        .build()));
         when(registrationRepository.findStudentScheduleConflicts(
                 "std1234567",
                 "act1234567",
@@ -102,7 +111,7 @@ class RegistrationServiceTest {
 
         assertEquals(RegistrationStatus.APPROVED, registration.getStatus());
         verify(registrationRepository).save(registration);
-        verify(notificationService).sendParticipationApprovedNotification("std1234567", "act1234567");
+        verify(notificationService).sendParticipationApprovedNotification("std1234567", "Ngay hoi viec lam");
     }
 
     @Test
@@ -163,6 +172,65 @@ class RegistrationServiceTest {
                 () -> registrationService.registerActivity("act1234567"));
 
         assertEquals(ErrorCode.STUDENT_ACTIVITY_TIME_CONFLICT, exception.getErrorCode());
+    }
+
+    @Test
+    void unregisterActivity_shouldAllowCancellationBeforeConfiguredDeadline() {
+        setStudentAuthentication();
+        Activity activity = Activity.builder()
+                .id("act1234567")
+                .status(ActivityStatus.APPROVED)
+                .startTime(LocalDateTime.now().plusHours(25))
+                .build();
+        Registration registration = Registration.builder()
+                .id("reg1234567")
+                .activityId("act1234567")
+                .studentId("std1234567")
+                .status(RegistrationStatus.APPROVED)
+                .build();
+
+        when(activityRepository.findById("act1234567")).thenReturn(Optional.of(activity));
+        when(registrationRepository.findByActivityIdAndStudentId("act1234567", "std1234567"))
+                .thenReturn(Optional.of(registration));
+        when(systemConfigService.getIntValue(SystemConfigService.REGISTRATION_CANCEL_DEADLINE_HOURS, 24))
+                .thenReturn(24);
+        when(registrationRepository.countByActivityIdAndStatusIn(
+                "act1234567",
+                List.of(RegistrationStatus.PENDING, RegistrationStatus.APPROVED)))
+                .thenReturn(0L);
+
+        registrationService.unregisterActivity("act1234567");
+
+        assertEquals(RegistrationStatus.CANCELLED, registration.getStatus());
+        verify(registrationRepository).save(registration);
+        verify(activityRepository).save(activity);
+    }
+
+    @Test
+    void unregisterActivity_shouldThrowWhenConfiguredCancellationDeadlinePassed() {
+        setStudentAuthentication();
+        Activity activity = Activity.builder()
+                .id("act1234567")
+                .status(ActivityStatus.APPROVED)
+                .startTime(LocalDateTime.now().plusHours(23))
+                .build();
+        Registration registration = Registration.builder()
+                .id("reg1234567")
+                .activityId("act1234567")
+                .studentId("std1234567")
+                .status(RegistrationStatus.APPROVED)
+                .build();
+
+        when(activityRepository.findById("act1234567")).thenReturn(Optional.of(activity));
+        when(registrationRepository.findByActivityIdAndStudentId("act1234567", "std1234567"))
+                .thenReturn(Optional.of(registration));
+        when(systemConfigService.getIntValue(SystemConfigService.REGISTRATION_CANCEL_DEADLINE_HOURS, 24))
+                .thenReturn(24);
+
+        AppException exception = assertThrows(AppException.class,
+                () -> registrationService.unregisterActivity("act1234567"));
+
+        assertEquals(ErrorCode.REGISTRATION_CANNOT_CANCEL, exception.getErrorCode());
     }
 
     private void setManagerAuthentication() {

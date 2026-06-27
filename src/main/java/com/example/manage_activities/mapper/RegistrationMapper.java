@@ -14,6 +14,7 @@ public interface RegistrationMapper {
     @Mapping(target = "studentId", ignore = true)
     @Mapping(target = "approvedBy", ignore = true)
     @Mapping(target = "status", ignore = true)
+    @Mapping(target = "rejectReason", ignore = true)
     @Mapping(target = "approvedAt", ignore = true)
     @Mapping(target = "cancelledAt", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

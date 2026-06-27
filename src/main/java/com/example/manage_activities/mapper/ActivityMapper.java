@@ -22,6 +22,7 @@ public interface ActivityMapper {
     Activity toEntity(ActivityCreateRequest request);
     
     // Convert Activity entity to response DTO
+    @Mapping(target = "organizerName", ignore = true)
     ActivityResponse toDTO(Activity activity);
 
     default String map(ActivityStatus status) {

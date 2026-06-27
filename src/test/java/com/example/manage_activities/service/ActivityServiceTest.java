@@ -1,5 +1,7 @@
 package com.example.manage_activities.service;
 
+import com.example.manage_activities.dto.request.ActivityCreateRequest;
+import com.example.manage_activities.dto.request.ActivityUpdateRequest;
 import com.example.manage_activities.dto.response.ActivityResponse;
 import com.example.manage_activities.entity.Activity;
 import com.example.manage_activities.entity.ActivityFile;
@@ -11,6 +13,7 @@ import com.example.manage_activities.mapper.ActivityMapper;
 import com.example.manage_activities.repository.ActivityFileRepository;
 import com.example.manage_activities.repository.ActivityRepository;
 import com.example.manage_activities.repository.AttendanceRepository;
+import com.example.manage_activities.repository.ProfileRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
 import com.example.manage_activities.repository.RoomRepository;
 import com.example.manage_activities.repository.UserRepository;
@@ -40,13 +43,14 @@ class ActivityServiceTest {
     private final ActivityFileRepository activityFileRepository = mock(ActivityFileRepository.class);
     private final AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
     private final RoomRepository roomRepository = mock(RoomRepository.class);
+    private final ProfileRepository profileRepository = mock(ProfileRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
     private final NotificationService notificationService = mock(NotificationService.class);
     private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
     private final SystemLogService systemLogService = mock(SystemLogService.class);
     private final ActivityService activityService =
             new ActivityService(activityRepository, activityMapper, registrationRepository, activityFileRepository,
-                    attendanceRepository, roomRepository, userRepository, notificationService, systemConfigService, systemLogService);
+                    attendanceRepository, roomRepository, profileRepository, userRepository, notificationService, systemConfigService, systemLogService);
 
     @AfterEach
     void cleanupSecurityContext() {
@@ -131,6 +135,51 @@ class ActivityServiceTest {
 
         assertEquals(ErrorCode.ORGANIZER_ACTIVITY_TIME_CONFLICT, exception.getErrorCode());
         assertEquals(ActivityStatus.REVIEWING, activity.getStatus());
+    }
+
+    @Test
+    void createActivity_shouldThrowWhenEndTimeIsNotAfterStartTime() {
+        LocalDateTime start = LocalDateTime.of(2026, 6, 1, 11, 0);
+        LocalDateTime end = LocalDateTime.of(2026, 6, 1, 9, 0);
+        ActivityCreateRequest request = ActivityCreateRequest.builder()
+                .title("Invalid Time Activity")
+                .roomId("A01")
+                .startTime(start)
+                .endTime(end)
+                .build();
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("org1234567", null));
+
+        AppException exception = assertThrows(AppException.class,
+                () -> activityService.createActivity(request));
+
+        assertEquals(ErrorCode.ACTIVITY_INVALID_TIME_RANGE, exception.getErrorCode());
+    }
+
+    @Test
+    void updateActivity_shouldThrowWhenMergedEndTimeIsNotAfterStartTime() {
+        LocalDateTime start = LocalDateTime.of(2026, 6, 1, 11, 0);
+        LocalDateTime end = LocalDateTime.of(2026, 6, 1, 9, 0);
+        Activity activity = Activity.builder()
+                .id("act1234567")
+                .status(ActivityStatus.DRAFT)
+                .organizerId("org1234567")
+                .startTime(LocalDateTime.of(2026, 6, 1, 8, 0))
+                .endTime(end)
+                .build();
+        ActivityUpdateRequest request = ActivityUpdateRequest.builder()
+                .startTime(start)
+                .build();
+
+        when(activityRepository.findById("act1234567")).thenReturn(Optional.of(activity));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("org1234567", null));
+
+        AppException exception = assertThrows(AppException.class,
+                () -> activityService.updateActivity("act1234567", request));
+
+        assertEquals(ErrorCode.ACTIVITY_INVALID_TIME_RANGE, exception.getErrorCode());
     }
 
     @Test

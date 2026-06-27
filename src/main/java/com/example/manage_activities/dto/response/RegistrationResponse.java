@@ -26,6 +26,7 @@ public class RegistrationResponse {
     String department;
     String approvedBy;
     String status;
+    String rejectReason;
     LocalDateTime approvedAt;
     LocalDateTime cancelledAt;
     LocalDateTime createdAt;

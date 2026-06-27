@@ -12,6 +12,7 @@ import com.example.manage_activities.dto.response.ManagerActivityStatisticsRespo
 import com.example.manage_activities.entity.Activity;
 import com.example.manage_activities.entity.ActivityFile;
 import com.example.manage_activities.entity.Attendance;
+import com.example.manage_activities.entity.Profile;
 import com.example.manage_activities.entity.Registration;
 import com.example.manage_activities.entity.Room;
 import com.example.manage_activities.entity.User;
@@ -25,6 +26,7 @@ import com.example.manage_activities.mapper.ActivityMapper;
 import com.example.manage_activities.repository.ActivityFileRepository;
 import com.example.manage_activities.repository.ActivityRepository;
 import com.example.manage_activities.repository.AttendanceRepository;
+import com.example.manage_activities.repository.ProfileRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
 import com.example.manage_activities.repository.RoomRepository;
 import com.example.manage_activities.repository.UserRepository;
@@ -86,6 +88,7 @@ public class ActivityService {
     ActivityFileRepository activityFileRepository;
     AttendanceRepository attendanceRepository;
     RoomRepository roomRepository;
+    ProfileRepository profileRepository;
     UserRepository userRepository;
     NotificationService notificationService;
     SystemConfigService systemConfigService;
@@ -131,6 +134,7 @@ public class ActivityService {
 
         String organizerId = getCurrentUserId();
         log.info("Authenticated organizer ID: {}", organizerId);
+        validateActivityTimeRange(request.getStartTime(), request.getEndTime());
 
         Activity activity = activityMapper.toEntity(request);
 
@@ -149,7 +153,7 @@ public class ActivityService {
         systemLogService.logAction(organizerId, "CREATE_ACTIVITY", "activities", null,
                 "activityId=" + savedActivity.getId() + ", status=" + savedActivity.getStatus().getValue());
         log.info("Activity created successfully with ID: {}", savedActivity.getId());
-        return activityMapper.toDTO(savedActivity);
+        return toActivityResponse(savedActivity);
     }
 
     /**
@@ -170,7 +174,7 @@ public class ActivityService {
                         fromTime,
                         toTime,
                         pageable)
-                .map(activityMapper::toDTO);
+                .map(this::toActivityResponse);
     }
 
     public Page<ActivityResponse> searchActivitiesForManager(
@@ -188,7 +192,7 @@ public class ActivityService {
                         fromTime,
                         toTime,
                         pageable)
-                .map(activityMapper::toDTO);
+                .map(this::toActivityResponse);
     }
 
     public Page<ActivityResponse> searchActivities(
@@ -207,7 +211,7 @@ public class ActivityService {
                         startTime,
                         endTime,
                         pageable)
-                .map(activityMapper::toDTO);
+                .map(this::toActivityResponse);
     }
 
     @Transactional
@@ -220,12 +224,13 @@ public class ActivityService {
         }
 
         applyUpdate(activity, request);
+        validateActivityTimeRange(activity.getStartTime(), activity.getEndTime());
         ensureOrganizerHasNoOverlappingActivity(activity);
         Activity savedActivity = activityRepository.save(activity);
         systemLogService.logAction(getCurrentUserId(), "UPDATE_ACTIVITY", "activities",
                 "activityId=" + id,
                 "activityId=" + id + ", status=" + savedActivity.getStatus().getValue());
-        return activityMapper.toDTO(savedActivity);
+        return toActivityResponse(savedActivity);
     }
 
     @Transactional
@@ -251,6 +256,7 @@ public class ActivityService {
             throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
         }
 
+        validateActivityTimeRange(activity.getStartTime(), activity.getEndTime());
         ensureOrganizerHasNoOverlappingActivity(activity);
         activity.setStatus(ActivityStatus.PENDING);
         Activity savedActivity = activityRepository.save(activity);
@@ -263,7 +269,7 @@ public class ActivityService {
                 "activityId=" + id + ", status=Draft",
                 "activityId=" + id + ", status=Pending");
         return ActivityReviewResponse.builder()
-                .activity(activityMapper.toDTO(savedActivity))
+                .activity(toActivityResponse(savedActivity))
                 .scheduleConflicts(scheduleConflicts)
                 .build();
     }
@@ -283,7 +289,7 @@ public class ActivityService {
         systemLogService.logAction(getCurrentUserId(), "REQUEST_CANCEL_ACTIVITY", "activities",
                 "activityId=" + id + ", status=Approved",
                 "activityId=" + id + ", status=CancellationRequested, reason=" + reason);
-        return activityMapper.toDTO(savedActivity);
+        return toActivityResponse(savedActivity);
     }
 
     @Transactional
@@ -402,7 +408,7 @@ public class ActivityService {
      */
     public ActivityResponse getActivityById(String id) {
         log.info("Getting activity with ID: {}", id);
-        return activityMapper.toDTO(getActivityEntity(id));
+        return toActivityResponse(getActivityEntity(id));
     }
 
     /**
@@ -440,7 +446,7 @@ public class ActivityService {
         systemLogService.logAction(getCurrentUserId(), "ASSIGN_ACTIVITY_REVIEWER", "activities",
                 "activityId=" + id + ", reviewerId=" + oldReviewerId,
                 "activityId=" + id + ", reviewerId=" + reviewerId);
-        return activityMapper.toDTO(savedActivity);
+        return toActivityResponse(savedActivity);
     }
 
     @Transactional
@@ -448,7 +454,7 @@ public class ActivityService {
         Activity activity = getActivityEntity(id);
 
         if (ActivityStatus.REVIEWING.equals(activity.getStatus())) {
-            return activityMapper.toDTO(activity);
+            return toActivityResponse(activity);
         }
         if (!ActivityStatus.PENDING.equals(activity.getStatus())) {
             throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
@@ -461,7 +467,7 @@ public class ActivityService {
         systemLogService.logAction(reviewerId, "START_ACTIVITY_REVIEW", "activities",
                 "activityId=" + id + ", status=Pending",
                 "activityId=" + id + ", status=Reviewing");
-        return activityMapper.toDTO(savedActivity);
+        return toActivityResponse(savedActivity);
     }
 
     @Transactional
@@ -477,6 +483,7 @@ public class ActivityService {
             throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
         }
 
+        validateActivityTimeRange(activity.getStartTime(), activity.getEndTime());
         ensureOrganizerHasNoOverlappingActivity(activity);
         String reviewerId = getCurrentUserId();
         activity.setStatus(ActivityStatus.APPROVED);
@@ -489,7 +496,7 @@ public class ActivityService {
         systemLogService.logAction(reviewerId, "APPROVE_ACTIVITY", "activities",
                 "activityId=" + id,
                 "activityId=" + id + ", status=Approved");
-        return activityMapper.toDTO(savedActivity);
+        return toActivityResponse(savedActivity);
     }
 
     /**
@@ -520,7 +527,7 @@ public class ActivityService {
         systemLogService.logAction(reviewerId, "REJECT_ACTIVITY", "activities",
                 "activityId=" + id,
                 "activityId=" + id + ", status=Rejected, rejectReason=" + rejectReason);
-        return activityMapper.toDTO(savedActivity);
+        return toActivityResponse(savedActivity);
     }
 
     @Transactional
@@ -539,7 +546,7 @@ public class ActivityService {
         systemLogService.logAction(getCurrentUserId(), "APPROVE_CANCEL_ACTIVITY", "activities",
                 "activityId=" + id + ", status=CancellationRequested",
                 "activityId=" + id + ", status=Cancelled");
-        return activityMapper.toDTO(savedActivity);
+        return toActivityResponse(savedActivity);
     }
 
     @Transactional
@@ -558,7 +565,7 @@ public class ActivityService {
         systemLogService.logAction(getCurrentUserId(), "REJECT_CANCEL_ACTIVITY", "activities",
                 "activityId=" + id + ", status=CancellationRequested",
                 "activityId=" + id + ", status=Approved, reason=" + reason);
-        return activityMapper.toDTO(savedActivity);
+        return toActivityResponse(savedActivity);
     }
 
     @Transactional
@@ -581,7 +588,7 @@ public class ActivityService {
         systemLogService.logAction(reviewerId, "CANCEL_APPROVED_ACTIVITY", "activities",
                 "activityId=" + id + ", status=" + oldStatus.getValue(),
                 "activityId=" + id + ", status=Cancelled, reason=" + reason);
-        return activityMapper.toDTO(savedActivity);
+        return toActivityResponse(savedActivity);
     }
 
     public List<ActivityScheduleConflictResponse> getScheduleConflicts(String id) {
@@ -593,6 +600,7 @@ public class ActivityService {
             String roomId,
             LocalDateTime startTime,
             LocalDateTime endTime) {
+        validateActivityTimeRange(startTime, endTime);
         Activity activity = Activity.builder()
                 .id("")
                 .startTime(startTime)
@@ -751,7 +759,7 @@ public class ActivityService {
         log.info("Getting activities with pagination - page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
 
         Page<Activity> activities = activityRepository.findAll(pageable);
-        return activities.map(activityMapper::toDTO);
+        return activities.map(this::toActivityResponse);
     }
 
     /**
@@ -762,7 +770,7 @@ public class ActivityService {
 
         return activityRepository.findByOrganizerId(organizerId)
                 .stream()
-                .map(activityMapper::toDTO)
+                .map(this::toActivityResponse)
                 .collect(Collectors.toList());
     }
 
@@ -775,7 +783,7 @@ public class ActivityService {
 
         return activityRepository.findByStatus(activityStatus)
                 .stream()
-                .map(activityMapper::toDTO)
+                .map(this::toActivityResponse)
                 .collect(Collectors.toList());
     }
 
@@ -808,6 +816,37 @@ public class ActivityService {
         if (request.getTargetAudience() != null) activity.setTargetAudience(request.getTargetAudience());
         if (request.getPurpose() != null) activity.setPurpose(request.getPurpose());
         if (request.getTrainingPoints() != null) activity.setTrainingPoints(request.getTrainingPoints());
+    }
+
+    private ActivityResponse toActivityResponse(Activity activity) {
+        ActivityResponse response = activityMapper.toDTO(activity);
+        if (response != null) {
+            response.setOrganizerName(resolveOrganizerName(activity.getOrganizerId()));
+        }
+        return response;
+    }
+
+    private String resolveOrganizerName(String organizerId) {
+        if (organizerId == null || organizerId.isBlank()) {
+            return null;
+        }
+
+        Profile profile = profileRepository.findByUserId(organizerId);
+        if (profile != null && profile.getFullName() != null && !profile.getFullName().isBlank()) {
+            return profile.getFullName();
+        }
+
+        return userRepository.findById(organizerId)
+                .map(user -> {
+                    if (user.getUsername() != null && !user.getUsername().isBlank()) {
+                        return user.getUsername();
+                    }
+                    if (user.getEmail() != null && !user.getEmail().isBlank()) {
+                        return user.getEmail();
+                    }
+                    return user.getId();
+                })
+                .orElse(organizerId);
     }
 
     private ActivityFileResponse toActivityFileResponse(ActivityFile activityFile) {
@@ -951,6 +990,12 @@ public class ActivityService {
                 activity.getEndTime());
         if (hasConflict) {
             throw new AppException(ErrorCode.ORGANIZER_ACTIVITY_TIME_CONFLICT);
+        }
+    }
+
+    private void validateActivityTimeRange(LocalDateTime startTime, LocalDateTime endTime) {
+        if (startTime != null && endTime != null && !endTime.isAfter(startTime)) {
+            throw new AppException(ErrorCode.ACTIVITY_INVALID_TIME_RANGE);
         }
     }
 

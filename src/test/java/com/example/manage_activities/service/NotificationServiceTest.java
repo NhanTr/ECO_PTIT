@@ -200,12 +200,29 @@ class NotificationServiceTest {
     }
 
     @Test
+    void sendParticipationApprovedNotification_shouldUseActivityTitleInContent() {
+        ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+
+        notificationService.sendParticipationApprovedNotification(
+                "std0000001",
+                "Ngay hoi viec lam"
+        );
+
+        verify(notificationRepository).save(captor.capture());
+        Notification saved = captor.getValue();
+        assertEquals("std0000001", saved.getReceiverId());
+        assertEquals("Activity", saved.getType());
+        assertTrue(saved.getContent().contains("Ngay hoi viec lam"));
+        assertTrue(!saved.getContent().contains("act0000001"));
+    }
+
+    @Test
     void sendParticipationRejectedNotification_shouldSaveOneNotification() {
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
 
         notificationService.sendParticipationRejectedNotification(
                 "std0000001",
-                "act0000001",
+                "Ngay hoi viec lam",
                 "Thieu thong tin kinh phi"
         );
 
@@ -213,6 +230,7 @@ class NotificationServiceTest {
         Notification saved = captor.getValue();
         assertEquals("std0000001", saved.getReceiverId());
         assertEquals("Activity", saved.getType());
+        assertTrue(saved.getContent().contains("Ngay hoi viec lam"));
         assertTrue(saved.getContent().contains("Ly do: Thieu thong tin kinh phi"));
     }
 

@@ -215,39 +215,39 @@ public class NotificationService {
 	}
 
 	@Transactional
-	public void sendParticipationApprovedNotification(String studentId, String activityId) {
+	public void sendParticipationApprovedNotification(String studentId, String activityTitle) {
 		Notification notification = Notification.builder()
 				.id(generateNotificationId())
 				.receiverId(studentId)
 				.senderId(getCurrentUserId())
 				.targetLabel(studentId)
 				.title("Dang ky hoat dong da duoc duyet")
-				.content("Dang ky tham gia hoat dong " + activityId + " da duoc duyet.")
+				.content("Dang ky tham gia hoat dong " + activityTitle + " da duoc duyet.")
 				.type("Activity")
 				.isRead(false)
 				.createdAt(LocalDateTime.now())
 				.build();
 
 		notificationRepository.save(notification);
-		log.info("Sent approval notification to student: {} for activity: {}", studentId, activityId);
+		log.info("Sent approval notification to student: {} for activity: {}", studentId, activityTitle);
 	}
 
 	@Transactional
-	public void sendParticipationRejectedNotification(String studentId, String activityId, String reason) {
+	public void sendParticipationRejectedNotification(String studentId, String activityTitle, String reason) {
 		Notification notification = Notification.builder()
 				.id(generateNotificationId())
 				.receiverId(studentId)
 				.senderId(getCurrentUserId())
 				.targetLabel(studentId)
 				.title("Dang ky hoat dong bi tu choi")
-				.content("Dang ky tham gia hoat dong " + activityId + " bi tu choi. Ly do: " + reason)
+				.content("Dang ky tham gia hoat dong " + activityTitle + " bi tu choi. Ly do: " + reason)
 				.type("Activity")
 				.isRead(false)
 				.createdAt(LocalDateTime.now())
 				.build();
 
 		notificationRepository.save(notification);
-		log.info("Sent rejection notification to student: {} for activity: {}", studentId, activityId);
+		log.info("Sent rejection notification to student: {} for activity: {}", studentId, activityTitle);
 	}
 
 	private String generateNotificationId() {

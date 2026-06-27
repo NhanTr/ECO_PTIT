@@ -82,6 +82,7 @@ public class RegistrationService {
             registration.setApprovedBy(null);
             registration.setApprovedAt(null);
             registration.setCancelledAt(null);
+            registration.setRejectReason(null);
             registration.setCreatedAt(LocalDateTime.now());
         } else {
             registration = new Registration();
@@ -218,9 +219,10 @@ public class RegistrationService {
         registration.setStatus(RegistrationStatus.APPROVED);
         registration.setApprovedBy(getCurrentUserId());
         registration.setApprovedAt(LocalDateTime.now());
+        registration.setRejectReason(null);
         Registration savedRegistration = registrationRepository.save(registration);
         refreshActivityParticipantCount(activity);
-        notificationService.sendParticipationApprovedNotification(studentId, activityId);
+        notificationService.sendParticipationApprovedNotification(studentId, activity.getTitle());
         systemLogService.logAction(getCurrentUserId(), "APPROVE_REGISTRATION", "registrations",
                 "registrationId=" + registration.getId() + ", status=Pending",
                 "registrationId=" + registration.getId() + ", status=Approved");
@@ -263,12 +265,13 @@ public class RegistrationService {
         registration.setStatus(RegistrationStatus.REJECTED);
         registration.setApprovedBy(null);
         registration.setApprovedAt(null);
+        registration.setRejectReason(reason);
         registrationRepository.save(registration);
         refreshActivityParticipantCount(activity);
 
         notificationService.sendParticipationRejectedNotification(
                 registration.getStudentId(),
-                registration.getActivityId(),
+                activity.getTitle(),
                 reason
         );
         systemLogService.logAction(getCurrentUserId(), "REJECT_REGISTRATION", "registrations",
@@ -320,8 +323,16 @@ public class RegistrationService {
             throw new AppException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
         }
 
+        if (activity.getStartTime() == null) {
+            return;
+        }
+
+        int cancelDeadlineHours = systemConfigService.getIntValue(
+                SystemConfigService.REGISTRATION_CANCEL_DEADLINE_HOURS,
+                24);
+        LocalDateTime cancellationDeadline = activity.getStartTime().minusHours(cancelDeadlineHours);
         LocalDateTime now = LocalDateTime.now();
-        if (activity.getStartTime() != null && !now.isBefore(activity.getStartTime())) {
+        if (!now.isBefore(cancellationDeadline)) {
             throw new AppException(ErrorCode.REGISTRATION_CANNOT_CANCEL);
         }
     }

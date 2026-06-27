@@ -32,6 +32,10 @@ public class Registration {
     String approvedBy;
 
     RegistrationStatus status;
+
+    @Column(name = "reject_reason", columnDefinition = "TEXT")
+    String rejectReason;
+
     LocalDateTime approvedAt;
     LocalDateTime cancelledAt;
     LocalDateTime createdAt;

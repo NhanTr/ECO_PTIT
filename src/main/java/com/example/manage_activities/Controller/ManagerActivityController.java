@@ -7,7 +7,9 @@ import com.example.manage_activities.dto.response.ActivityReviewResponse;
 import com.example.manage_activities.dto.response.ActivityResponse;
 import com.example.manage_activities.dto.response.ActivityScheduleConflictResponse;
 import com.example.manage_activities.dto.response.ManagerActivityStatisticsResponse;
+import com.example.manage_activities.dto.response.StudentStatisticsResponse;
 import com.example.manage_activities.service.ActivityService;
+import com.example.manage_activities.service.StatisticsService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ import java.util.List;
 public class ManagerActivityController {
 
     ActivityService activityService;
+    StatisticsService statisticsService;
 
     /**
      * Search/filter activities by lifecycle status.
@@ -170,6 +173,22 @@ public class ManagerActivityController {
             @RequestParam(required = false) Integer semester) {
         return APIResponse.<ManagerActivityStatisticsResponse>builder()
                 .result(activityService.getManagerStatistics(year, semester))
+                .build();
+    }
+
+    /**
+     * Student participation and points statistics.
+     * GET /api/manager/activities/student-statistics?fromTime=2026-01-01T00:00:00&toTime=2026-12-31T23:59:59&className=D20CQCN01-B
+     */
+    @GetMapping("/student-statistics")
+    @PreAuthorize("hasAnyRole('MANAGER','ADMIN')")
+    public APIResponse<StudentStatisticsResponse> getStudentStatistics(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fromTime,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime toTime,
+            @RequestParam(required = false) String className,
+            @RequestParam(required = false) String department) {
+        return APIResponse.<StudentStatisticsResponse>builder()
+                .result(statisticsService.getStudentStatistics(fromTime, toTime, className, department))
                 .build();
     }
 
