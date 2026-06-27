@@ -3,7 +3,9 @@ package com.example.manage_activities.Controller;
 import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserUpdateRequest;
 import com.example.manage_activities.dto.response.APIResponse;
+import com.example.manage_activities.dto.response.BulkUserImportResponse;
 import com.example.manage_activities.dto.response.UserResponse;
+import com.example.manage_activities.service.UserImportService;
 import com.example.manage_activities.service.UserService;
 import com.opencsv.CSVWriter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,6 +14,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +24,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -36,6 +41,7 @@ import java.util.List;
 public class AdminUserController {
 
     UserService userService;
+    UserImportService userImportService;
 
     @PostMapping
     public APIResponse<UserResponse> createUser(@Valid @RequestBody UserCreateRequest request) {
@@ -78,6 +84,33 @@ public class AdminUserController {
                     user.getCreatedAt() != null ? user.getCreatedAt().toString() : ""
             }));
         }
+    }
+
+    /**
+     * Bulk import users from a CSV file. Only ADMIN may call this endpoint
+     * (additional check inside {@link UserImportService}).
+     */
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public APIResponse<BulkUserImportResponse> importUsers(@RequestPart("file") MultipartFile file) {
+        log.info("Admin bulk import users from CSV ({} bytes)", file.getSize());
+        return APIResponse.response(userImportService.importUsers(file));
+    }
+
+    /**
+     * Download a CSV template that admins can fill in to perform a bulk import.
+     */
+    @GetMapping("/import/template")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> downloadImportTemplate() throws IOException {
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        userImportService.writeTemplate(baos);
+        byte[] body = baos.toByteArray();
+        return ResponseEntity.ok()
+                .header("Content-Type", "text/csv; charset=UTF-8")
+                .header("Content-Disposition",
+                        "attachment; filename=\"users_import_template.csv\"")
+                .body(body);
     }
 
     @GetMapping("/{id}")
