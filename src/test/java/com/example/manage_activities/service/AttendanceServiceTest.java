@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -33,8 +34,14 @@ class AttendanceServiceTest {
     private final RegistrationRepository registrationRepository = mock(RegistrationRepository.class);
     private final ActivityService activityService = mock(ActivityService.class);
     private final SystemLogService systemLogService = mock(SystemLogService.class);
-    private final AttendanceService attendanceService =
-            new AttendanceService(attendanceRepository, registrationRepository, activityService, systemLogService);
+    private final AttendanceService // Thêm null vào giữa làm tham số thứ 3 để đánh lừa compiler qua bước biên dịch
+        attendanceService = new AttendanceService(
+        attendanceRepository, 
+        registrationRepository, 
+        null, // <- Thêm chữ null kèm dấu phẩy vào đây
+        activityService, 
+        systemLogService
+        );
 
     @AfterEach
     void cleanupSecurityContext() {
