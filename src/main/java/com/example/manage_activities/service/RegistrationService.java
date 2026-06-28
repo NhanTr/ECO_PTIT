@@ -374,7 +374,11 @@ public class RegistrationService {
                 .registrationStatus(registration.getStatus() == null ? null : registration.getStatus().getValue())
                 .isPresent(attendance == null ? null : attendance.getIsPresent())
                 .checkInTime(attendance == null ? null : attendance.getCheckInTime())
-                .earnedPoints(attendance == null ? 0 : attendance.getEarnedPoints())
+                .earnedPoints(
+                        attendance == null || attendance.getEarnedPoints() == null
+                                ? 0
+                                : attendance.getEarnedPoints()
+                )
                 .registeredAt(registration.getCreatedAt())
                 .build();
     }
