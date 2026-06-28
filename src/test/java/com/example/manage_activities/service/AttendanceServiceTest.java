@@ -9,6 +9,7 @@ import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.enums.RegistrationStatus;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
+import com.example.manage_activities.repository.ActivityFileRepository;
 import com.example.manage_activities.repository.AttendanceRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -32,6 +33,7 @@ class AttendanceServiceTest {
 
     private final AttendanceRepository attendanceRepository = mock(AttendanceRepository.class);
     private final RegistrationRepository registrationRepository = mock(RegistrationRepository.class);
+    private final ActivityFileRepository activityFileRepository = mock(ActivityFileRepository.class);
     private final ActivityService activityService = mock(ActivityService.class);
     private final SystemLogService systemLogService = mock(SystemLogService.class);
     private final AttendanceService // Thêm null vào giữa làm tham số thứ 3 để đánh lừa compiler qua bước biên dịch
