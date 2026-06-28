@@ -3,6 +3,7 @@ package com.example.manage_activities.Controller;
 import com.example.manage_activities.dto.request.UserCreateRequest;
 import com.example.manage_activities.dto.request.UserUpdateRequest;
 import com.example.manage_activities.dto.response.APIResponse;
+import com.example.manage_activities.dto.response.BulkImportResponse;
 import com.example.manage_activities.dto.response.UserResponse;
 import com.example.manage_activities.service.UserService;
 import com.opencsv.CSVWriter;
@@ -22,7 +23,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -100,6 +103,23 @@ public class AdminUserController {
         log.info("Admin deactivate user: {}", id);
         userService.deactivateUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(value = "/bulk-import", consumes = {"multipart/form-data", "text/csv", "application/vnd.ms-excel"})
+    public APIResponse<BulkImportResponse> bulkImportUsers(@RequestPart("file") MultipartFile file) throws IOException {
+        log.info("Bulk import users from CSV: {} ({} bytes)", file.getOriginalFilename(), file.getSize());
+        if (file.isEmpty()) {
+            return APIResponse.<BulkImportResponse>builder()
+                    .code(400)
+                    .message("File rỗng")
+                    .build();
+        }
+        BulkImportResponse result = userService.bulkImportFromCsv(file.getInputStream());
+        return APIResponse.<BulkImportResponse>builder()
+                .code(200)
+                .message("Import hoàn tất: " + result.getSuccessCount() + "/" + result.getTotalRows() + " thành công")
+                .result(result)
+                .build();
     }
 
 }

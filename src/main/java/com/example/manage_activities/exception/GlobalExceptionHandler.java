@@ -2,6 +2,7 @@ package com.example.manage_activities.exception;
 
 import com.example.manage_activities.dto.response.APIResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -32,6 +33,26 @@ public class GlobalExceptionHandler {
                 .body(APIResponse.builder()
                         .code(errorCode.getCode())
                         .message(errorCode.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(value = HttpMessageNotReadableException.class)
+    public ResponseEntity<APIResponse<?>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        Throwable root = ex.getMostSpecificCause();
+        log.warn("Malformed request body: {}", root != null ? root.getMessage() : ex.getMessage());
+        String message;
+        if (root != null && root.getMessage() != null && root.getMessage().startsWith("Unexpected character ('u'")) {
+            message = "Dữ liệu gửi lên không hợp lệ (undefined). Vui lòng kiểm tra lại form trước khi gửi.";
+        } else if (root instanceof com.fasterxml.jackson.core.JsonParseException) {
+            message = "Định dạng dữ liệu JSON không hợp lệ. Vui lòng kiểm tra lại payload.";
+        } else {
+            message = "Yêu cầu không hợp lệ: thiếu hoặc sai định dạng dữ liệu gửi lên.";
+        }
+        return ResponseEntity
+                .status(400)
+                .body(APIResponse.builder()
+                        .code(ErrorCode.BAD_REQUEST.getCode())
+                        .message(message)
                         .build());
     }
 

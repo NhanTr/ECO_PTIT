@@ -83,12 +83,41 @@ public class SecurityConfig {
 
     @Bean
     JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
-        converter.setAuthoritiesClaimName("scopes");
-        converter.setAuthorityPrefix("ROLE_");
         JwtAuthenticationConverter authenticationConverter = new JwtAuthenticationConverter();
-        authenticationConverter.setJwtGrantedAuthoritiesConverter(converter);
+        authenticationConverter.setJwtGrantedAuthoritiesConverter(new ScopesAuthoritiesConverter());
         return authenticationConverter;
+    }
+
+    static class ScopesAuthoritiesConverter implements org.springframework.core.convert.converter.Converter<org.springframework.security.oauth2.jwt.Jwt, java.util.Collection<org.springframework.security.core.GrantedAuthority>> {
+        private final JwtGrantedAuthoritiesConverter delegate = new JwtGrantedAuthoritiesConverter();
+
+        ScopesAuthoritiesConverter() {
+            delegate.setAuthoritiesClaimName("scopes");
+            delegate.setAuthorityPrefix("ROLE_");
+        }
+
+        @Override
+        public java.util.Collection<org.springframework.security.core.GrantedAuthority> convert(org.springframework.security.oauth2.jwt.Jwt jwt) {
+            Object scopes = jwt.getClaims().get("scopes");
+            java.util.Collection<org.springframework.security.core.GrantedAuthority> authorities = new java.util.ArrayList<>();
+            if (scopes instanceof String s && !s.isBlank()) {
+                for (String part : s.split("[\\s,]+")) {
+                    if (!part.isBlank()) {
+                        authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + part));
+                    }
+                }
+            } else if (scopes instanceof java.util.Collection<?> col) {
+                for (Object o : col) {
+                    if (o != null) {
+                        authorities.add(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_" + o.toString()));
+                    }
+                }
+            }
+            if (authorities.isEmpty()) {
+                authorities.addAll(delegate.convert(jwt));
+            }
+            return authorities;
+        }
     }
 
     
