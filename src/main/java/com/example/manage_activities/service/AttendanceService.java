@@ -8,8 +8,10 @@ import com.example.manage_activities.entity.Attendance;
 import com.example.manage_activities.entity.Registration;
 import com.example.manage_activities.enums.ActivityStatus;
 import com.example.manage_activities.enums.RegistrationStatus;
+import com.example.manage_activities.enums.ReportStatus;
 import com.example.manage_activities.exception.AppException;
 import com.example.manage_activities.exception.ErrorCode;
+import com.example.manage_activities.repository.ActivityFileRepository;
 import com.example.manage_activities.repository.AttendanceRepository;
 import com.example.manage_activities.repository.RegistrationRepository;
 import lombok.AccessLevel;
@@ -30,6 +32,7 @@ public class AttendanceService {
 
     AttendanceRepository attendanceRepository;
     RegistrationRepository registrationRepository;
+    ActivityFileRepository activityFileRepository;
     ActivityService activityService;
     SystemLogService systemLogService;
 
@@ -73,11 +76,6 @@ public class AttendanceService {
 
         if (requireActivityManager) {
             attendance.setIsPresent(Boolean.TRUE.equals(request.getIsPresent()));
-            if (!Boolean.TRUE.equals(attendance.getIsPresent())) {
-                attendance.setEarnedPoints(0);
-            } else {
-                attendance.setEarnedPoints(activity.getTrainingPoints() == null ? 0 : activity.getTrainingPoints());
-            }
         } else {
             attendance.setCheckInTime(LocalDateTime.now());
             if (newAttendance) {
@@ -104,6 +102,13 @@ public class AttendanceService {
 
         if (!ActivityStatus.CLOSED.equals(activity.getStatus())) {
             throw new AppException(ErrorCode.POINT_AWARD_NOT_ALLOWED);
+        }
+
+        if (!activityFileRepository
+                .findFirstByActivityIdAndFileTypeAndReportStatusOrderByUploadedAtDesc(
+                        activity.getId(), "Report", ReportStatus.APPROVED)
+                .isPresent()) {
+            throw new AppException(ErrorCode.REPORT_NOT_APPROVED);
         }
 
         Attendance attendance = attendanceRepository.findByRegistrationId(registration.getId())

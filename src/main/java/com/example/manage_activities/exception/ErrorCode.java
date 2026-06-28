@@ -48,7 +48,8 @@ public enum ErrorCode {
     ACTIVITY_REPORT_NOT_DOWNLOADED(1039, "Report must be downloaded before approval or rejection", HttpStatus.BAD_REQUEST),
     STUDENT_ACTIVITY_TIME_CONFLICT(1040, "Student already has another activity at this time", HttpStatus.BAD_REQUEST),
     ORGANIZER_ACTIVITY_TIME_CONFLICT(1041, "Organizer already has another activity at this time", HttpStatus.BAD_REQUEST),
-    ACTIVITY_INVALID_TIME_RANGE(1042, "Activity end time must be after start time", HttpStatus.BAD_REQUEST);
+    ACTIVITY_INVALID_TIME_RANGE(1042, "Activity end time must be after start time", HttpStatus.BAD_REQUEST),
+    REPORT_NOT_APPROVED(1043, "Report must be approved by manager before awarding points", HttpStatus.BAD_REQUEST);
 
 
     private int code;

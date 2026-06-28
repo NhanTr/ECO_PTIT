@@ -39,4 +39,7 @@ public interface ActivityFileRepository extends JpaRepository<ActivityFile, Stri
             @Param("organizerId") String organizerId,
             @Param("activityId") String activityId,
             @Param("reportStatus") ReportStatus reportStatus);
+
+    Optional<ActivityFile> findFirstByActivityIdAndFileTypeAndReportStatusOrderByUploadedAtDesc(
+            String activityId, String fileType, ReportStatus reportStatus);
 }
