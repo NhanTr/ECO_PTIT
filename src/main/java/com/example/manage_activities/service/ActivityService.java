@@ -66,6 +66,8 @@ public class ActivityService {
             List.of(ActivityStatus.DRAFT, ActivityStatus.PENDING, ActivityStatus.REJECTED);
     private static final List<ActivityStatus> DELETABLE_ACTIVITY_STATUSES =
             List.of(ActivityStatus.DRAFT, ActivityStatus.PENDING);
+    private static final List<ActivityStatus> SUBMITTABLE_ACTIVITY_STATUSES =
+            List.of(ActivityStatus.DRAFT, ActivityStatus.REJECTED);
     private static final List<RegistrationStatus> COUNTED_REGISTRATION_STATUSES =
             List.of(RegistrationStatus.PENDING, RegistrationStatus.APPROVED);
     private static final List<ActivityStatus> AUTO_CLOSE_ACTIVITY_STATUSES =
@@ -252,9 +254,8 @@ public class ActivityService {
         Activity activity = getActivityEntity(id);
         ensureCanManageActivity(activity);
 
-        if (!ActivityStatus.DRAFT.equals(activity.getStatus())) {
-            throw new AppException(ErrorCode.ACTIVITY_INVALID_STATUS_TRANSITION);
-        }
+        ActivityStatus previousStatus = activity.getStatus();
+        ensureActivityStatusIn(activity, SUBMITTABLE_ACTIVITY_STATUSES, "submit");
 
         validateActivityTimeRange(activity.getStartTime(), activity.getEndTime());
         ensureOrganizerHasNoOverlappingActivity(activity);
@@ -266,7 +267,7 @@ public class ActivityService {
                     id, scheduleConflicts.size());
         }
         systemLogService.logAction(getCurrentUserId(), "SUBMIT_ACTIVITY", "activities",
-                "activityId=" + id + ", status=Draft",
+                "activityId=" + id + ", status=" + previousStatus.getValue(),
                 "activityId=" + id + ", status=Pending");
         return ActivityReviewResponse.builder()
                 .activity(toActivityResponse(savedActivity))
